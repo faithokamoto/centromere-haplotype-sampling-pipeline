@@ -101,7 +101,7 @@ def collect_tsvs(haplotype: str) -> Dict[int, str]:
 
     return tsv_files
 
-def read_identity(tsv_file: str) -> Dict[str, float]:
+def read_identity_tsv(tsv_file: str) -> Dict[str, float]:
     """Read read identity from a TSV file.
 
     Parameters
@@ -201,7 +201,7 @@ def guess_optimal_n(tsv_files: Dict[int, str]) -> int:
     n_with_jump = None
     previous_identities = None
     for n in sorted(tsv_files.keys()):
-        current_identities = read_identity(tsv_files[n])
+        current_identities = read_identity_tsv(tsv_files[n])
         # Don't bother checking out this n further if hopeless
         if is_file_hopeless(current_identities):
             continue
@@ -213,8 +213,10 @@ def guess_optimal_n(tsv_files: Dict[int, str]) -> int:
         else:
             avg_change = calculate_average_identity_change(
                 previous_identities, current_identities)
+            print(f"Avg identity delta from n={n-1} to n={n}: {avg_change:.6f}")
             if avg_change > JUMP_IDENTITY_THRESHOLD:
                 n_with_jump = n
+                print("JUMP!!")
         
         previous_identities = current_identities
     
@@ -227,4 +229,8 @@ if __name__ == "__main__":
     if len(tsv_files) == 0:
         raise ValueError(f"No TSV files found for haplotype: {args.haplotype}")
 
-    print(guess_optimal_n(tsv_files))
+    optimal_n = guess_optimal_n(tsv_files)
+    if optimal_n == 0:
+        print(f"Haplotype {args.haplotype} is hopeless")
+    else:
+        print(f"Sample {optimal_n} haplotypes for {args.haplotype}")
