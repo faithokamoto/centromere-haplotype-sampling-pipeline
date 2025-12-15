@@ -8,8 +8,7 @@ which has undergone [haplotype sampling][HaplotypeSampling].
 
 ## Dependencies
 
-- [`vg`][vg]: currently commit `c7b038d8142e4bfadd1c095cb62adef60f8ce0e9`
-but will update in the future
+- [`vg`][vg]: currently commit `29913b2d00a9c9401b3a5a7bbd6125d7c62055dc`
 - [Python 3][Python]: currently using v3.14.1
 
 ## Background
@@ -55,11 +54,11 @@ for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
 
 ## TODO
 
-- Put `--ban-sample` in the vg version
 - Make basic and probably very bad guessing script
     - Decide which samples/haplotypes are hopeless
     - Rank based on identity scores
     - Rank (tiebreak?) based on node usage stats
+- Can the haplotype sampler itself guess when to stop?
 - Have pipeline run diploid samples instead of haploid
 
 [Centrolign]: https://github.com/jeizenga/centrolign
