@@ -225,9 +225,20 @@ def guess_optimal_n(tsv_files: Dict[int, str]) -> int:
 if __name__ == "__main__":
     args = parse_args()
 
+    if "." in args.haplotype:
+        # This looks like a path
+        haplotype = convert_path_to_haplotype(args.haplotype)
+    if not (args.haplotype.endswith("_pat") 
+            or args.haplotype.endswith("_mat")
+            or args.haplotype.endswith("_hap1") 
+            or args.haplotype.endswith("_hap2")):
+        print(f"Invalid haplotype name: {args.haplotype}")
+        exit(1)
+
     tsv_files = collect_tsvs(args.haplotype)
     if len(tsv_files) == 0:
-        raise ValueError(f"No TSV files found for haplotype: {args.haplotype}")
+        print(f"No TSV files found for haplotype: {args.haplotype}")
+        exit(1)
 
     optimal_n = guess_optimal_n(tsv_files)
     if optimal_n == 0:
