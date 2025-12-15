@@ -18,7 +18,11 @@ TSV_DIR = "/private/groups/patenlab/fokamoto/centrolign/alignments/leave_one_out
 """Where alignments to haplotype-sampled graphs are stored."""
 
 MAX_HOPELESS_FRACTION = 0.5
+"""Max fraction of reads aligned with < HOPELESS_IDENTITY_THRESHOLD identity."""
 HOPELESS_IDENTITY_THRESHOLD = 0.99
+"""Identity threshold below which a read is considered poorly aligned."""
+JUMP_IDENTITY_THRESHOLD = 0.005
+"""Average identity change threshold to consider a jump significant."""
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
@@ -148,30 +152,73 @@ def is_file_hopeless(identities: Dict[str, float]) -> bool:
     hopeless_fraction = hopeless_reads / total_reads
     return hopeless_fraction > MAX_HOPELESS_FRACTION
 
-def is_haplo_hopeless(tsv_files: Dict[int, str]) -> bool:
-    """Decide if a given haplotype is hopeless.
+def calculate_average_identity_change(identities1: Dict[str, float],
+                                      identities2: Dict[str, float]) -> float:
+    """Calculate average identity change between two sets of identities.
 
-    All sampled haplotype counts must be hopeless, using
-    is_file_hopeless() to determine per-file hopelessness.
+    Assumes that all reads are in both dictionaries,
+    as these are supposed to be alignments of the
+    same reads to different graphs.
 
     Parameters
     ----------
-    haplotype : str
-        The haplotype name (e.g., 'HG02622_mat').
+    identities1 : Dict[str, float]
+        A dictionary mapping read names to their identity values (first set).
+    identities2 : Dict[str, float]
+        A dictionary mapping read names to their identity values (second set).
+
+    Returns
+    -------
+    avg_change : float
+        The average change in identity between the two sets.
+    """
+
+    total_change = 0.0
+    count = 0
+    for read_name in identities1.keys():
+        change = identities2[read_name] - identities1[read_name]
+        total_change += change
+        count += 1
+    if count == 0:
+        return 0.0
+    return total_change / count
+
+def guess_optimal_n(tsv_files: Dict[int, str]) -> int:
+    """Guess the optimal number of haplotypes to sample.
+
+    Parameters
+    ----------
     tsv_files : Dict[int, str]
         A dictionary mapping number of sampled haplotypes to TSV file paths.
 
     Returns
     -------
-    is_hopeless : bool
-        True if the case is hopeless, False otherwise.
+    optimal_n : int
+        The guessed optimal number of haplotypes to sample.
     """
 
-    for _, tsv_file in tsv_files.items():
-        identities = read_identity(tsv_file)
-        if not is_file_hopeless(identities):
-            return False
-    return True
+    found_non_hopeless = False
+    n_with_jump = None
+    previous_identities = None
+    for n in sorted(tsv_files.keys()):
+        current_identities = read_identity(tsv_files[n])
+        # Don't bother checking out this n further if hopeless
+        if is_file_hopeless(current_identities):
+            continue
+        
+        if not found_non_hopeless:
+            found_non_hopeless = True
+            # Going from hopeless to non-hopeless is a jump
+            n_with_jump = n
+        else:
+            avg_change = calculate_average_identity_change(
+                previous_identities, current_identities)
+            if avg_change > JUMP_IDENTITY_THRESHOLD:
+                n_with_jump = n
+        
+        previous_identities = current_identities
+    
+    return n_with_jump if found_non_hopeless else 0
 
 if __name__ == "__main__":
     args = parse_args()
@@ -180,8 +227,4 @@ if __name__ == "__main__":
     if len(tsv_files) == 0:
         raise ValueError(f"No TSV files found for haplotype: {args.haplotype}")
 
-    if is_haplo_hopeless(tsv_files):
-        print(0)
-        exit(0)
-
-    raise NotImplementedError("Optimal n guessing not yet implemented for non-hopeless cases.")
+    print(guess_optimal_n(tsv_files))
