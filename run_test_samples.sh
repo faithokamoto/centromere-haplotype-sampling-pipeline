@@ -3,6 +3,7 @@
 # Usage: run_test_samples.sh
 
 while IFS= read -r line; do
-    ./guess_optimal_num_sampled_haplo.py "$line"
+    haplotype=$(echo "$line" | cut -f1 -d ",")
+    ./guess_optimal_num_sampled_haplo.py "$haplotype"
     echo "============="
 done < test_samples.txt
