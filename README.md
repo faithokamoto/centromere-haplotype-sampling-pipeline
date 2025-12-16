@@ -73,12 +73,12 @@ column, that the optimal *n* is as in the second column.
 
 ## TODO
 
-[] Make basic and probably very bad guessing script
-    [X] Decide which samples/haplotypes are hopeless
-    [X] Rank based on identity scores
-    [] Rank (tiebreak?) based on node usage stats
-[] Can the haplotype sampler itself guess when to stop?
-[] Have pipeline run diploid samples instead of haploid
+- [ ] Make basic and probably very bad guessing script
+    - [X] Decide which samples/haplotypes are hopeless
+    - [X] Rank based on identity scores
+    - [ ] Rank (tiebreak?) based on node usage stats
+- [ ] Can the haplotype sampler itself guess when to stop?
+- [ ] Have pipeline run diploid samples instead of haploid
 
 [Centrolign]: https://github.com/jeizenga/centrolign
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling
