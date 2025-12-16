@@ -1,7 +1,7 @@
 # Centromere haplotype sampling pipeline
 
 > [!WARNING]
-> Under active development. Doesn't work yet.
+> Under active development.
 
 This is a pipeline which aligns centromeric reads against a pangenome graph
 which has undergone [haplotype sampling][HaplotypeSampling].
