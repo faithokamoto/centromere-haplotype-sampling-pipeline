@@ -106,13 +106,13 @@ do
     echo "Sampling $num_hap haplotypes"
     hap_prefix=${SAMPLE_NAME}.${num_hap}haps
     real_graph=$PROJ_DIR/graph/leave_one_out/real_${hap_prefix}
-    real_out=$PROJ_DIR/alignments/leave_one_out/real_${hap_prefix}z
+    real_out=$PROJ_DIR/alignments/leave_one_out/real_${hap_prefix}
 
     # Haplotype sampling on leave-one-out graph
     vg haplotypes -t 1 -k $KMER_DIR/real_${SAMPLE_NAME}.kff -i ${BIG_GRAPH}.hapl \
         --num-haplotypes $num_hap --haploid-scoring -d ${BIG_GRAPH}.dist \
-        -g ${real_graph}.giraffe.gbz --ban-sample $SAMPLE_ID --coverage median \
-         ${BIG_GRAPH}.giraffe.gbz
+        -g ${real_graph}.giraffe.gbz --ban-sample $SAMPLE_ID \
+        ${BIG_GRAPH}.giraffe.gbz
     vg autoindex --prefix $real_graph --no-guessing \
         --workflow lr-giraffe --gbz ${real_graph}.giraffe.gbz
 
