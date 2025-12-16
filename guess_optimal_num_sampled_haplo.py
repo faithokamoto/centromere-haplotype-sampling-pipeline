@@ -21,7 +21,7 @@ MAX_HOPELESS_FRACTION = 0.5
 """Max fraction of reads aligned with < HOPELESS_IDENTITY_THRESHOLD identity."""
 HOPELESS_IDENTITY_THRESHOLD = 0.99
 """Identity threshold below which a read is considered poorly aligned."""
-JUMP_IDENTITY_THRESHOLD = 0.001
+JUMP_IDENTITY_THRESHOLD = 0.0005
 """Average identity change threshold to consider a jump significant."""
 
 def parse_args() -> argparse.Namespace:
