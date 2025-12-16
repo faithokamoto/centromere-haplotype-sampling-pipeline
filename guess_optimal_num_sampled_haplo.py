@@ -152,36 +152,24 @@ def is_file_hopeless(identities: Dict[str, float]) -> bool:
     hopeless_fraction = hopeless_reads / total_reads
     return hopeless_fraction > MAX_HOPELESS_FRACTION
 
-def calculate_average_identity_change(identities1: Dict[str, float],
-                                      identities2: Dict[str, float]) -> float:
-    """Calculate average identity change between two sets of identities.
-
-    Assumes that all reads are in both dictionaries,
-    as these are supposed to be alignments of the
-    same reads to different graphs.
+def calculate_average_identity(identities: Dict[str, float]) -> float:
+    """Calculate average identity for a set of alignments.
 
     Parameters
     ----------
-    identities1 : Dict[str, float]
-        A dictionary mapping read names to their identity values (first set).
-    identities2 : Dict[str, float]
-        A dictionary mapping read names to their identity values (second set).
+    identities : Dict[str, float]
+        A dictionary mapping read names to their identity values
 
     Returns
     -------
-    avg_change : float
-        The average change in identity between the two sets.
+    average_identity : float
+        The average identity value.
     """
 
-    total_change = 0.0
-    count = 0
-    for read_name in identities1.keys():
-        change = identities2[read_name] - identities1[read_name]
-        total_change += change
-        count += 1
-    if count == 0:
+    if len(identities) == 0:
         return 0.0
-    return total_change / count
+    total_identity = sum(identities.values())
+    return total_identity / len(identities)
 
 def guess_optimal_n(tsv_files: Dict[int, str]) -> int:
     """Guess the optimal number of haplotypes to sample.
@@ -199,7 +187,8 @@ def guess_optimal_n(tsv_files: Dict[int, str]) -> int:
 
     found_non_hopeless = False
     n_with_jump = None
-    previous_identities = None
+    # Average identity for the alignment set which had a jump
+    jump_avg = 0.0
     for n in sorted(tsv_files.keys()):
         current_identities = read_identity_tsv(tsv_files[n])
         # Don't bother checking out this n further if hopeless
@@ -210,15 +199,16 @@ def guess_optimal_n(tsv_files: Dict[int, str]) -> int:
             found_non_hopeless = True
             # Going from hopeless to non-hopeless is a jump
             n_with_jump = n
+            jump_avg = calculate_average_identity(current_identities)
         else:
-            avg_change = calculate_average_identity_change(
-                previous_identities, current_identities)
-            print(f"Avg identity delta from n={n-1} to n={n}: {avg_change:.6f}")
-            if avg_change > JUMP_IDENTITY_THRESHOLD:
+            cur_avg = calculate_average_identity(current_identities)
+            print(f"n={n}: avg identity={cur_avg:.6f} "
+                  f"(prev jump avg={jump_avg:.6f}; "
+                  f"diff={cur_avg - jump_avg:.6f})")
+            if cur_avg - jump_avg > JUMP_IDENTITY_THRESHOLD:
                 n_with_jump = n
-                print("JUMP!!")
-        
-        previous_identities = current_identities
+                jump_avg = cur_avg
+                print(f"  Significant jump detected at n={n}!")
     
     return n_with_jump if found_non_hopeless else 0
 
