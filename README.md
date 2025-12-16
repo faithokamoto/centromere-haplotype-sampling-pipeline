@@ -50,16 +50,35 @@ Starting from an empty directory and installations of the dependencies:
 is necessary because all haplotypes must participate in the same top-level chain
 for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
 3. Perform alignments (currently done with `leave_one_out_alignments.sh`)
-4. TODO: make a script to guess optimal *n* here
+4. Run `guess_optimal_num_sampled_haplo.sh` for each haplotype to get *n*.
+
+`./run_test_samples.sh` should guess, for each input haplotype in the first
+column, that the optimal *n* is as in the second column.
+
+## Files
+
+- **Workflow**
+    - `add_dummy_caps.py`: modify Centrolign GFAs to input to haplotype sampling
+    - `align_reads_giraffe.sh`: align reads against a graph via `vg giraffe`
+    - `align_reads_minimap2.sh`: align reads against a linear ref via `minimap2`
+    - `guess_optimal_num_sampled_haplo.py`: guess optimal *n* value
+    - `leave_one_out_alignments.sh`: run the leave-one-out alignments
+- **Testing**
+    - `run_test_samples.sh`: script to run the guesser on all test haplotypes
+    - `test_samples.txt`: two-column CSV of haplotype name & current output
+- **Metadata**
+    - `.gitignore`: some files that I don't feel like putting on version control
+    - `LICENSE`: the MIT license as it applies to this repository
+    - `README.md`: this file, which explains the repository
 
 ## TODO
 
-- Make basic and probably very bad guessing script
-    - Decide which samples/haplotypes are hopeless
-    - Rank based on identity scores
-    - Rank (tiebreak?) based on node usage stats
-- Can the haplotype sampler itself guess when to stop?
-- Have pipeline run diploid samples instead of haploid
+[] Make basic and probably very bad guessing script
+    [X] Decide which samples/haplotypes are hopeless
+    [X] Rank based on identity scores
+    [] Rank (tiebreak?) based on node usage stats
+[] Can the haplotype sampler itself guess when to stop?
+[] Have pipeline run diploid samples instead of haploid
 
 [Centrolign]: https://github.com/jeizenga/centrolign
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling
