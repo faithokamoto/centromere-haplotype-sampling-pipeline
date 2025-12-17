@@ -8,7 +8,7 @@ which has undergone [haplotype sampling][HaplotypeSampling].
 
 ## Dependencies
 
-- [`vg`][vg]: currently commit `29913b2d00a9c9401b3a5a7bbd6125d7c62055dc`
+- [`vg`][vg]: currently commit `c4c189272dc02750774bac921c2c5996e486ad7d`
 - [Python 3][Python]: currently using v3.14.1
 
 ## Background
@@ -80,6 +80,7 @@ column, that the optimal *n* is as in the second column.
     - [X] Rank based on identity scores
     - [ ] Rank (tiebreak?) based on node usage stats
 - [ ] Can the haplotype sampler itself guess when to stop?
+- [ ] Find "correctness" using distance matrix / nearby samples
 - [ ] Have pipeline run diploid samples instead of haploid
 
 [Centrolign]: https://github.com/jeizenga/centrolign
