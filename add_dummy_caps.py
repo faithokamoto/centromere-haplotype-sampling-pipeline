@@ -168,6 +168,32 @@ def add_dummy_nodes(graph: Graph) -> Graph:
 
     return nodes, edges, paths
 
+def convert_to_pan_sn(path_name: str) -> str:
+    """Convert a path name to Pan-SN format.
+
+    Format will be <sample name>#<haplo #>#<contig name>
+    where the latter is the original path name
+    and the other two are extracted from it.
+
+    https://github.com/pangenome/PanSN-spec
+    
+    Parameters
+    ----------
+    path_name : str
+        Original path name in <sample name>.<haplo #>.
+
+    Returns
+    -------
+    str
+        Converted path name in Pan-SN format.
+    """
+
+    if '.' not in path_name:
+        raise ValueError(f"Path name {path_name} does not contain a '.'")
+    sample_name, haplo_num = path_name.rsplit('.', 1)
+    pan_sn_name = f"{sample_name}#{haplo_num}#{path_name}"
+    return pan_sn_name
+
 def write_gfa(graph: Graph, output_file: str):
     """Write the graph to a GFA file.
     
@@ -190,7 +216,8 @@ def write_gfa(graph: Graph, output_file: str):
         for path_name, node_list in paths.items():
             path_str = ','.join(f"{node_id}{orientation}" 
                                 for node_id, orientation in node_list)
-            f.write(f"P\t{path_name}\t{path_str}\t*\n")
+            pan_sn_name = convert_to_pan_sn(path_name)
+            f.write(f"P\t{pan_sn_name}\t{path_str}\t*\n")
 
 if __name__ == "__main__":
     args = parse_args()

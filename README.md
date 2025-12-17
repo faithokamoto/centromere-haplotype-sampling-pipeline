@@ -49,8 +49,9 @@ Starting from an empty directory and installations of the dependencies:
 2. Connect dummy nodes to the source and sink of each haplotype path. This step
 is necessary because all haplotypes must participate in the same top-level chain
 for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
-3. Perform alignments (currently done with `leave_one_out_alignments.sh`)
-4. Run `guess_optimal_num_sampled_haplo.sh` for each haplotype to get *n*.
+3. Convert to a GBZ and index for haplotype sampling: `gfa_to_gbz_ref.sh`
+4. Perform alignments (currently done with `leave_one_out_alignments.sh`)
+5. Run `guess_optimal_num_sampled_haplo.sh` for each haplotype to get *n*.
 
 `./run_test_samples.sh` should guess, for each input haplotype in the first
 column, that the optimal *n* is as in the second column.
@@ -61,6 +62,7 @@ column, that the optimal *n* is as in the second column.
     - `add_dummy_caps.py`: modify Centrolign GFAs to input to haplotype sampling
     - `align_reads_giraffe.sh`: align reads against a graph via `vg giraffe`
     - `align_reads_minimap2.sh`: align reads against a linear ref via `minimap2`
+    - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
     - `guess_optimal_num_sampled_haplo.py`: guess optimal *n* value
     - `leave_one_out_alignments.sh`: run the leave-one-out alignments
 - **Testing**

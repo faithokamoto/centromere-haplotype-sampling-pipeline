@@ -72,7 +72,7 @@ rm $PROJ_DIR/to_align/${SAMPLE_NAME}_temp.sam
 # ---- align to own haplotype ----
 
 # Align to own haplotype
-vg mod --keep-path $PATH_NAME ${BIG_GRAPH}.giraffe.pg > ${OWN_HAP_GRAPH}.vg 2> /dev/null
+vg paths --paths-by $PATH_NAME --extract-fasta -x $BIG_GRAPH.gbz
 vg paths --extract-fasta -x ${OWN_HAP_GRAPH}.vg > ${OWN_HAP_GRAPH}.fasta
 # Convert to GBZ
 vg gbwt --index-paths -x ${OWN_HAP_GRAPH}.vg -o ${OWN_HAP_GRAPH}.gbwt
@@ -111,8 +111,7 @@ do
     # Haplotype sampling on leave-one-out graph
     vg haplotypes -t 1 -k $KMER_DIR/real_${SAMPLE_NAME}.kff -i ${BIG_GRAPH}.hapl \
         --num-haplotypes $num_hap --haploid-scoring -d ${BIG_GRAPH}.dist \
-        -g ${real_graph}.giraffe.gbz --ban-sample $SAMPLE_ID \
-        ${BIG_GRAPH}.giraffe.gbz
+        -g ${real_graph}.giraffe.gbz --ban-sample $SAMPLE_ID ${BIG_GRAPH}.gbz
     vg autoindex --prefix $real_graph --no-guessing \
         --workflow lr-giraffe --gbz ${real_graph}.giraffe.gbz
 
