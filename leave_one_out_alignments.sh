@@ -1,15 +1,16 @@
 #!/bin/bash
 # Run haplotype sampling with a leave-one-out graph
-# Usage: leave_one_out_alignments.sh <chromosome> <path name> <version>
+# Usage: leave_one_out_alignments.sh <chromosome> <original path name> <version>
 # Example: leave_one_out_alignments.sh chr12 HG00099.1 v1
 
 # ---- process arguments ----
 
 CHROM=$1
-PATH_NAME=$2
+ORIG_PATH_NAME=$2
 VERSION=$3
-SAMPLE_ID=`echo "$PATH_NAME" | cut -f1 -d "." `
-HAPLO_NUM=`echo "$PATH_NAME" | cut -f2 -d "." `
+SAMPLE_ID=`echo "$ORIG_PATH_NAME" | cut -f1 -d "." `
+HAPLO_NUM=`echo "$ORIG_PATH_NAME" | cut -f2 -d "." `
+PATH_NAME="${SAMPLE_ID}#${HAPLO_NUM}#${ORIG_PATH_NAME}#0"
 
 BED_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/extract_hors_HPRC/release2/contiguous_HORs_bed_files
 BED_SUFFIX=hprc_r2_${VERSION}_hor_arrays.bed
@@ -49,32 +50,31 @@ CHM13_PREFIX=$PROJ_DIR/alignments/linear_refs/${SAMPLE_NAME}.chm13
 
 # ---- get reads to align ----
 
-# Download reads
-echo "Downloading reads for $SAMPLE_NAME from AWS:"
-reads=`grep "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | cut -f3 -d ","` 
-echo "$reads"
-aws s3 --no-sign-request cp $reads $PROJ_DIR/to_align/${SAMPLE_NAME}.bam &> /dev/null
-if [ ! -f "$PROJ_DIR/to_align/${SAMPLE_NAME}.bam" ]; then
-    echo "ERROR: Could not find reads for $SAMPLE_NAME"
-    exit 1
-fi
-grep $CHROM ${BED_DIR}/${SAMPLE_NAME}_${BED_SUFFIX} > ${REAL_READS}.bed
-# Convert to FASTQ
-samtools view -@32 -L ${REAL_READS}.bed $PROJ_DIR/to_align/${SAMPLE_NAME}.bam \
-    > $PROJ_DIR/to_align/${SAMPLE_NAME}_temp.sam
-cut -f1,4 $PROJ_DIR/to_align/${SAMPLE_NAME}_temp.sam > $PROJ_DIR/to_align/real_${SAMPLE_NAME}_truth.tsv
-awk '{print "@" $1 "\n" $10 "\n+\n" $11}' $PROJ_DIR/to_align/${SAMPLE_NAME}_temp.sam > ${REAL_READS}.fastq
+if [ ! -f ${REAL_READS}.fastq ]; then
+    # Download reads
+    echo "Downloading reads for $SAMPLE_NAME from AWS:"
+    reads=`grep "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | cut -f3 -d ","` 
+    echo "$reads"
+    aws s3 --no-sign-request cp $reads $PROJ_DIR/to_align/${SAMPLE_NAME}.bam &> /dev/null
+    if [ ! -f "$PROJ_DIR/to_align/${SAMPLE_NAME}.bam" ]; then
+        echo "ERROR: Could not find reads for $SAMPLE_NAME"
+        exit 1
+    fi
+    grep $CHROM ${BED_DIR}/${SAMPLE_NAME}_${BED_SUFFIX} > ${REAL_READS}.bed
+    # Convert to FASTQ
+    samtools view -@32 -L ${REAL_READS}.bed $PROJ_DIR/to_align/${SAMPLE_NAME}.bam | \
+        awk '{print "@" $1 "\n" $10 "\n+\n" $11}' > ${REAL_READS}.fastq
 
-# Clean up memory
-rm $PROJ_DIR/to_align/${SAMPLE_NAME}.bam
-rm $PROJ_DIR/to_align/${SAMPLE_NAME}_temp.sam
+    # Clean up memory
+    rm $PROJ_DIR/to_align/${SAMPLE_NAME}.bam
+fi
 
 # ---- align to own haplotype ----
 
 # Align to own haplotype
-vg paths --paths-by $PATH_NAME --extract-fasta -x $BIG_GRAPH.gbz
-vg paths --extract-fasta -x ${OWN_HAP_GRAPH}.vg > ${OWN_HAP_GRAPH}.fasta
+vg paths --paths-by $PATH_NAME --extract-fasta -x $BIG_GRAPH.gbz > ${OWN_HAP_GRAPH}.fasta
 # Convert to GBZ
+vg construct --reference ${OWN_HAP_GRAPH}.fasta -m 1024 > ${OWN_HAP_GRAPH}.vg
 vg gbwt --index-paths -x ${OWN_HAP_GRAPH}.vg -o ${OWN_HAP_GRAPH}.gbwt
 vg gbwt --gbz-format -x ${OWN_HAP_GRAPH}.vg ${OWN_HAP_GRAPH}.gbwt \
     -g ${OWN_HAP_GRAPH}.giraffe.gbz
