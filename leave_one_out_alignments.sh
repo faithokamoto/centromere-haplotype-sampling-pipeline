@@ -37,7 +37,7 @@ echo "Processing sample: $SAMPLE_NAME"
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/$CHROM
 
-CHM13_GRAPH=$PROJ_DIR/graph/linear_refs/chm13.chr12asat
+CHM13_GRAPH=$PROJ_DIR/graph/linear_refs/chm13.${CHROM}asat
 OWN_HAP_GRAPH=$PROJ_DIR/graph/linear_refs/$SAMPLE_NAME
 
 READ_SUFFIX=${CHROM}_hor_array.hifi
@@ -73,6 +73,8 @@ fi
 
 # Align to own haplotype
 vg paths --paths-by $PATH_NAME --extract-fasta -x $BIG_GRAPH.gbz > ${OWN_HAP_GRAPH}.fasta
+# Avoid auto-conversion of name
+sed "s/${PATH_NAME}/${ORIG_PATH_NAME}/" -i ${OWN_HAP_GRAPH}.fasta
 # Convert to GBZ
 vg construct --reference ${OWN_HAP_GRAPH}.fasta -m 1024 > ${OWN_HAP_GRAPH}.vg
 vg gbwt --index-paths -x ${OWN_HAP_GRAPH}.vg -o ${OWN_HAP_GRAPH}.gbwt
@@ -83,23 +85,22 @@ vg autoindex --gbz ${OWN_HAP_GRAPH}.giraffe.gbz -w lr-giraffe \
     --prefix $OWN_HAP_GRAPH --no-guessing
 minimap2 -x map-hifi -d ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.fasta
 
-$PROJ_DIR/code/align_reads_minimap2.sh \
-    ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.giraffe.gbz \
-    ${REAL_READS}.fastq ${OWN_HAP_PREFIX}.real.minimap2
-$PROJ_DIR/code/align_reads_giraffe.sh \
-    ${OWN_HAP_GRAPH}.giraffe.gbz ${REAL_READS}.fastq ${OWN_HAP_PREFIX}.real.giraffe
+#./align_reads_minimap2.sh ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.giraffe.gbz \
+#    ${REAL_READS}.fastq ${OWN_HAP_PREFIX}.real.minimap2
+#./align_reads_giraffe.sh ${OWN_HAP_GRAPH}.giraffe.gbz \
+#    ${REAL_READS}.fastq ${OWN_HAP_PREFIX}.real.giraffe
 
 # ---- align to CHM13 ----
 
-$PROJ_DIR/code/align_reads_minimap2.sh ${CHM13_GRAPH}.mmi \
-    ${CHM13_GRAPH}.giraffe.gbz ${REAL_READS}.fastq ${CHM13_PREFIX}.real.minimap2
-$PROJ_DIR/code/align_reads_giraffe.sh \
-    ${CHM13_GRAPH}.giraffe.gbz ${REAL_READS}.fastq ${CHM13_PREFIX}.real.giraffe
+#./align_reads_minimap2.sh ${CHM13_GRAPH}.mmi ${CHM13_GRAPH}.giraffe.gbz \
+#    ${REAL_READS}.fastq ${CHM13_PREFIX}.real.minimap2
+#./align_reads_giraffe.sh ${CHM13_GRAPH}.giraffe.gbz \
+#    ${REAL_READS}.fastq ${CHM13_PREFIX}.real.giraffe
 
 # ---- align to to haplotype-sampled graphs ----
 
-kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
-    $KMER_DIR/real_${SAMPLE_NAME} $KMER_DIR > $KMER_DIR/real_${SAMPLE_NAME}.kff.log
+#kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
+#    $KMER_DIR/real_${SAMPLE_NAME} $KMER_DIR > $KMER_DIR/real_${SAMPLE_NAME}.kff.log
 
 for num_hap in {1..8}
 do
@@ -116,8 +117,7 @@ do
         --workflow lr-giraffe --gbz ${real_graph}.giraffe.gbz
 
     # Align reads to sampled graph
-    $PROJ_DIR/code/align_reads_giraffe.sh \
-        ${real_graph}.giraffe.gbz ${REAL_READS}.fastq $real_out
+    #./align_reads_giraffe.sh ${real_graph}.giraffe.gbz ${REAL_READS}.fastq $real_out
 
     # Need GFA for later node usage analysis
     vg convert --gfa-out ${real_graph}.giraffe.gbz > ${real_graph}.gfa

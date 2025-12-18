@@ -14,8 +14,9 @@ OUT=$4
 minimap2 -ax map-hifi -t 20 $INDEX $READS > $OUT.sam 2> $OUT.log
 # Filter out secondary/supplementary alignments before converting to BAM
 samtools view -b -F 256 -F 2048 $OUT.sam > $OUT.bam
-rm $OUT.sam
 
 # Pull vg's identity statistic
 vg inject -x $GRAPH --add-identity $OUT.bam > $OUT.gam
 vg filter --tsv-out "name;identity" $OUT.gam > $OUT.tsv
+# Irrelevant now since we have the GAM
+rm $OUT.sam $OUT.bam

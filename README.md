@@ -51,7 +51,7 @@ is necessary because all haplotypes must participate in the same top-level chain
 for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
 3. Convert to a GBZ and index for haplotype sampling: `gfa_to_gbz_ref.sh`
 4. Perform alignments (currently done with `leave_one_out_alignments.sh`)
-5. Run `guess_optimal_num_sampled_haplo.sh` for each haplotype to get *n*.
+5. Run `guess_optimal_num_sampled_haplo.py` for each haplotype to get *n*.
 
 `./run_test_samples.sh` should guess, for each input haplotype in the first
 column, that the optimal *n* is as in the second column.
@@ -67,7 +67,8 @@ column, that the optimal *n* is as in the second column.
     - `leave_one_out_alignments.sh`: run the leave-one-out alignments
 - **Testing**
     - `run_test_samples.sh`: script to run the guesser on all test haplotypes
-    - `test_samples.txt`: two-column CSV of haplotype name & current output
+    - `test_samples.txt`: CSV with 21 hand-selected test samples; columns are
+    path name, BED file version number, haplotype name, and optimal *n*
 - **Metadata**
     - `.gitignore`: some files that I don't feel like putting on version control
     - `LICENSE`: the MIT license as it applies to this repository
@@ -80,8 +81,15 @@ column, that the optimal *n* is as in the second column.
     - [X] Rank based on identity scores
     - [ ] Rank (tiebreak?) based on node usage stats
 - [ ] Can the haplotype sampler itself guess when to stop?
+    - [ ] Plot score changes around optimal number
 - [ ] Find "correctness" using distance matrix / nearby samples
+    - [ ] Plot # of neighbors found within optimal subsampling
+        - Also care about "fake" neighbors that were swept up?
+        - % of total that could be found?
+        - 0.15 threshold?
+    - [ ] Plot dist to nearest neighbor vs. dist to nearest subsampled
 - [ ] Have pipeline run diploid samples instead of haploid
+- [ ] Attempt to do typing
 
 [Centrolign]: https://github.com/jeizenga/centrolign
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling
