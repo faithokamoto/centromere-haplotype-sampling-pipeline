@@ -47,12 +47,8 @@ def get_sample_avgs(sample_name: str, optimal_hap: int) -> Dict[str, float]:
     else:
         # Otherwise, use 1 sampled haplotype
         avgs[LABELS[1]] = get_identity_tsv_avg(filenames[3])
-    # This file might not exist if no neighbor was found    
-    try:
-        avgs[LABELS[2]] = get_identity_tsv_avg(filenames[2])
-    except FileNotFoundError:
-        pass
     
+    avgs[LABELS[2]] = get_identity_tsv_avg(filenames[2])
     avgs[LABELS[3]] = get_identity_tsv_avg(filenames[3])
     avgs[LABELS[4]] = get_identity_tsv_avg(filenames[4])
     return avgs

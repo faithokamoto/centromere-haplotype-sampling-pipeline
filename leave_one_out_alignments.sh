@@ -35,7 +35,7 @@ echo "Processing sample: $SAMPLE_NAME"
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/chr12
-DISTS=/private/groups/patenlab/mira/centrolign/guide_tree_testing/release2_weighted_sum/HPRC_r2_chr12_cenhap_20250402_centrolign_all_pairs_HOR_flank_dist_weighted.txt
+DISTS=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/all_pairs/distance_matrices/chr12_r2_QC_v2_centrolign_pairwise_distance.csv
 
 CHM13_GRAPH=$PROJ_DIR/graph/linear_refs/chm13.chr12asat
 OWN_HAP_GRAPH=$PROJ_DIR/graph/linear_refs/$SAMPLE_NAME
@@ -103,40 +103,34 @@ minimap2 -x map-hifi -d ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.fasta
 # ---- align to nearest neighbor ----
 
 # Get nearest neighbor
-num_neighbors=`grep $ORIG_PATH_NAME $DISTS | wc -l`
-echo "Found $num_neighbors neighbors for $ORIG_PATH_NAME"
-if [ $num_neighbors -lt 1 ]; then
-    echo "Could not find nearest neighbor for $ORIG_PATH_NAME"
-else
-    nearest_neighbor_line=`grep $ORIG_PATH_NAME $DISTS | sed 's/,/\t/g' | sort -k3 -n | head -1`
-    echo "Nearest neighbor line: $nearest_neighbor_line"
-    nearest_neighbor=`echo $nearest_neighbor_line | cut -f1-2 -d " " | tr " " "\n" | grep -v $ORIG_PATH_NAME`
-    neighbor_sample_id=`echo $nearest_neighbor | cut -f1 -d "."`
-    neighbor_haplo_num=`echo $nearest_neighbor | cut -f2 -d "."`
-    neighbor_path_name="${neighbor_sample_id}#${neighbor_haplo_num}#${nearest_neighbor}#0"
-    echo "Aligning to nearest neighbor: $neighbor_path_name"
-    neighbor_graph=$PROJ_DIR/graph/linear_refs/$nearest_neighbor
+nearest_neighbor_line=`grep $ORIG_PATH_NAME $DISTS | sed 's/,/\t/g' | sort -k3 -n | head -1`
+echo "Nearest neighbor line: $nearest_neighbor_line"
+nearest_neighbor=`echo $nearest_neighbor_line | cut -f1-2 -d " " | tr " " "\n" | grep -v $ORIG_PATH_NAME`
+neighbor_sample_id=`echo $nearest_neighbor | cut -f1 -d "."`
+neighbor_haplo_num=`echo $nearest_neighbor | cut -f2 -d "."`
+neighbor_path_name="${neighbor_sample_id}#${neighbor_haplo_num}#${nearest_neighbor}#0"
+echo "Aligning to nearest neighbor: $neighbor_path_name"
+neighbor_graph=$PROJ_DIR/graph/linear_refs/$nearest_neighbor
 
-    vg paths --paths-by $neighbor_path_name --extract-fasta -x $BIG_GRAPH.gbz > ${neighbor_graph}.fasta
-    # Avoid auto-conversion of name
-    sed "s/${neighbor_path_name}/${nearest_neighbor}/" -i ${neighbor_graph}.fasta
-    # Avoid reusing an old index
-    rm -f ${neighbor_graph}.fasta.fai
-    # Convert to GBZ
-    vg construct --reference ${neighbor_graph}.fasta -m 1024 > ${neighbor_graph}.vg
-    vg gbwt --index-paths -x ${neighbor_graph}.vg -o ${neighbor_graph}.gbwt
-    vg gbwt --gbz-format -x ${neighbor_graph}.vg ${neighbor_graph}.gbwt \
-        -g ${neighbor_graph}.giraffe.gbz
-    # Index
-    vg autoindex --gbz ${neighbor_graph}.giraffe.gbz -w lr-giraffe \
-        --prefix $neighbor_graph --no-guessing
-    minimap2 -x map-hifi -d ${neighbor_graph}.mmi ${neighbor_graph}.fasta
+vg paths --paths-by $neighbor_path_name --extract-fasta -x $BIG_GRAPH.gbz > ${neighbor_graph}.fasta
+# Avoid auto-conversion of name
+sed "s/${neighbor_path_name}/${nearest_neighbor}/" -i ${neighbor_graph}.fasta
+# Avoid reusing an old index
+rm -f ${neighbor_graph}.fasta.fai
+# Convert to GBZ
+vg construct --reference ${neighbor_graph}.fasta -m 1024 > ${neighbor_graph}.vg
+vg gbwt --index-paths -x ${neighbor_graph}.vg -o ${neighbor_graph}.gbwt
+vg gbwt --gbz-format -x ${neighbor_graph}.vg ${neighbor_graph}.gbwt \
+    -g ${neighbor_graph}.giraffe.gbz
+# Index
+vg autoindex --gbz ${neighbor_graph}.giraffe.gbz -w lr-giraffe \
+    --prefix $neighbor_graph --no-guessing
+minimap2 -x map-hifi -d ${neighbor_graph}.mmi ${neighbor_graph}.fasta
 
-    ./helper_scripts/align_reads_minimap2.sh ${neighbor_graph}.mmi ${neighbor_graph}.giraffe.gbz \
-        ${REAL_READS}.fastq ${NEIGHBOR_PREFIX}.real.minimap2
-    ./helper_scripts/align_reads_giraffe.sh ${neighbor_graph}.giraffe.gbz \
-        ${REAL_READS}.fastq ${NEIGHBOR_PREFIX}.real.giraffe
-fi
+./helper_scripts/align_reads_minimap2.sh ${neighbor_graph}.mmi ${neighbor_graph}.giraffe.gbz \
+    ${REAL_READS}.fastq ${NEIGHBOR_PREFIX}.real.minimap2
+./helper_scripts/align_reads_giraffe.sh ${neighbor_graph}.giraffe.gbz \
+    ${REAL_READS}.fastq ${NEIGHBOR_PREFIX}.real.giraffe
 
 # ---- align to to haplotype-sampled graphs ----
 
