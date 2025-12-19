@@ -12,8 +12,8 @@ import os
 
 from typing import Dict
 
-BED_DIR = "/private/groups/patenlab/mira/centrolign/batch_submissions/extract_hors_HPRC/release2/contiguous_HORs_bed_files"
-"""Mira's BED files, the names of which hint at path-to-haplotype mapping."""
+SAMPLE_TABLE = 'input_data/test_samples.txt'
+"""Four-column CSV of (path name, version, haplotype name, optimal N)."""
 TSV_DIR = "/private/groups/patenlab/fokamoto/centrolign/alignments/leave_one_out"
 """Where alignments to haplotype-sampled graphs are stored."""
 
@@ -31,47 +31,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("haplotype", type=str,
                         help="Name of the haplotype (e.g., 'HG02622_mat')")
     return parser.parse_args()
-
-def convert_path_to_haplotype(path_name: str) -> str:
-    """Convert a path name to a haplotype name.
-
-    In an attempt to be a little more user-friendly,
-    this function automatically translates a path name
-    (e.g. as you would find in the GFA) to the
-    corresponding haplotype name used in file names.
-
-    Parameters
-    ----------
-    path_name : str
-        The path name (e.g., 'HG02622.2').
-
-    Returns
-    -------
-    haplotype_name : str
-        The haplotype name (e.g., 'HG02622_mat').
-    """
-
-    # Parse sections of <sample ID>.<haplotype number>
-    if not "." in path_name:
-        raise ValueError(f"Invalid path name: {path_name}")
-    sample_id, hap_num = path_name.split(".")
-
-    # If this were a pat/mat trio sample, what would the haplotype be?
-    if hap_num == "1":
-        name_if_trio = f"{sample_id}_pat"
-    elif hap_num == "2":
-        name_if_trio = f"{sample_id}_mat"
-    else:
-        raise ValueError(f"Invalid haplotype number in path name: {path_name}")
-
-    # Check if the corresponding BED file exists
-    for _, __, files in os.walk(BED_DIR):
-        for file in files:
-            if file.startswith(name_if_trio) and file.endswith(".bed"):
-                return name_if_trio
-    
-    # Otherwise, this is a non-trio hap1/hap2 sample
-    return f"{sample_id}_hap{hap_num}"
 
 def collect_tsvs(haplotype: str) -> Dict[int, str]:
     """Collect relevant TSV files for a given path name.
@@ -215,9 +174,6 @@ def guess_optimal_n(tsv_files: Dict[int, str]) -> int:
 if __name__ == "__main__":
     args = parse_args()
 
-    if "." in args.haplotype:
-        # This looks like a path
-        haplotype = convert_path_to_haplotype(args.haplotype)
     if not (args.haplotype.endswith("_pat") 
             or args.haplotype.endswith("_mat")
             or args.haplotype.endswith("_hap1") 

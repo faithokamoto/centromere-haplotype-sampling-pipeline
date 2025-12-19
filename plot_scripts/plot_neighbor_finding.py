@@ -14,10 +14,9 @@ LAST_SAMPLE_RUN = 'Sampling 8 haplotypes'
 """The first thing logged during the last sampling run."""
 
 # I/O file ptahs
-DISTANCE_MATRIX = '/private/groups/patenlab/mira/centrolign/guide_tree_testing/release2_weighted_sum/' \
-                  'HPRC_r2_chr12_cenhap_20250402_centrolign_all_pairs_HOR_flank_dist_weighted.txt'
+DISTANCE_MATRIX = 'input_data/HPRC_r2_chr12_cenhap_20250402_centrolign_all_pairs_HOR_flank_dist_weighted.txt'
 """Three-column CSV of haplotype pairs and their distances."""
-SAMPLE_TABLE = 'test_samples.txt'
+SAMPLE_TABLE = 'input_data/test_samples.txt'
 """Four-column CSV of (path name, version, haplotype name, optimal N)."""
 LOG_FILE = 'log/test_output.txt'
 OUTPUT_FILE = 'plot_outputs/neighbor_finding.png'

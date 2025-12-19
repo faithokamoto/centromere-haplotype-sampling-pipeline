@@ -15,7 +15,7 @@ LINEAR_DIR = f'{PROJ_DIR}/alignments/linear_refs/'
 SAMPLED_DIR = f'{PROJ_DIR}/alignments/leave_one_out/'
 
 # I/O file locations
-INPUT_FILE = 'test_samples.txt'
+INPUT_FILE = 'input_data/test_samples.txt'
 OUTPUT_FILE = 'plot_outputs/avg_identities.png'
 
 LABELS = ['Native Haplotype', 'Optimal # Sampled', 
