@@ -83,8 +83,8 @@ column, that the optimal *n* is as in the second column.
 - [X] Can the haplotype sampler itself guess when to stop?
     **NO**: no obvious drop
     - [X] Plot score changes around optimal number
-- [ ] Find "correctness" using distance matrix / nearby samples
-    - [ ] Plot # of neighbors found within optimal subsampling
+- [X] Find "correctness" using distance matrix / nearby samples
+    - [X] Plot # of neighbors found within optimal subsampling
         - Also care about "fake" neighbors that were swept up?
         - % of total that could be found?
         - 0.15 threshold?

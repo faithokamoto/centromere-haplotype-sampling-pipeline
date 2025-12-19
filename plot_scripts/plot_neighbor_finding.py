@@ -248,6 +248,70 @@ def plot_nearest_dist(distance_matrix: Dict[str, Dict[str, float]],
     ax.set_xlabel('Dist to true neighbor')
     ax.set_ylabel('Dist to first sampled')
 
+def get_correctness_data(distance_matrix: Dict[str, Dict[str, float]],
+                         sampled_haplotypes: List[Tuple[str, float]],
+                         path_name: str, optimal_n: int, 
+                         threshold: float) -> float:
+    """Get the correctness data for plotting.
+    
+    Parameters
+    ----------
+    distance_matrix : Dict[str, Dict[str, float]]
+        {hap1: {hap2: distance}} dictionary.
+    sampled_haplotypes : List[Tuple[str, float]]
+        A list of (haplotype, score) tuples for sampled haplotypes.
+        Should be sorted already by score in descending order.
+    path_name : str
+        The name of the haplotype.
+    optimal_n : int
+        The optimal number of haplotypes.
+    threshold : float
+        The maximum distance to consider a haplotype a neighbor.
+
+    Returns
+    -------
+    float
+        % correct neighbors found
+    """
+    correct_neighbors = 0
+    matrix_neighbors = find_neighbors(distance_matrix, path_name, threshold)
+    if not matrix_neighbors:
+        return None
+    matrix_neighbor_set = set([haplo for haplo, _ in matrix_neighbors])
+    for sampled_haplo, _ in sampled_haplotypes[:optimal_n]:
+        if sampled_haplo in matrix_neighbor_set:
+            correct_neighbors += 1
+    return correct_neighbors / optimal_n * 100
+
+def plot_correctness(distance_matrix: Dict[str, Dict[str, float]],
+                     all_sampled_haplotypes: Dict[str, List[Tuple[str, float]]],
+                     sample_table: Dict[str, Tuple[str, int]],
+                     ax: plt.Axes) -> None:
+    """Plot histogram of % correct neighbors found.
+
+    Parameters
+    ----------
+    distance_matrix : Dict[str, Dict[str, float]]
+        {hap1: {hap2: distance}} dictionary.
+    all_sampled_haplotypes : Dict[str, List[Tuple[str, float]]]
+        A dictionary mapping haplotype names to their sampled haplotypes.
+    sample_table : Dict[str, Tuple[str, int]]
+        A dictionary mapping haplotype names to their path name and optimal N.
+    ax : plt.Axes:
+        The matplotlib Axes object to plot on.
+    """
+    hist_values = []
+    for haplo_name, sampled_haplotypes in all_sampled_haplotypes.items():
+        if sample_table[haplo_name][1] > 0:
+            correctness = get_correctness_data(distance_matrix, 
+                sampled_haplotypes, sample_table[haplo_name][0],
+                sample_table[haplo_name][1], DIST_THRESHOLD)
+            if correctness is not None:
+                hist_values.append(correctness)
+    ax.hist(hist_values, bins=range(0, 101, 10), edgecolor='black')
+    ax.set_xlabel(f'% <{DIST_THRESHOLD} neighbors found')
+    ax.set_ylabel('# other neighbors found')
+
 def plot_neighbor_finding(distance_matrix: Dict[str, Dict[str, float]], 
                           sample_table: Dict[str, Tuple[str, int]],
                           log_file: str, output_file: str) -> None:
@@ -274,6 +338,9 @@ def plot_neighbor_finding(distance_matrix: Dict[str, Dict[str, float]],
     plot_score_drop(all_sampled_haplotypes, all_optimal_ns, axs[0][0])
     plot_nearest_dist(distance_matrix, all_sampled_haplotypes, 
                       sample_table, axs[0][1])
+    plot_correctness(distance_matrix, all_sampled_haplotypes, sample_table, axs[1][0])
+    axs[1][1].axis('off')
+    plt.tight_layout()
     plt.savefig(output_file)
 
 if __name__ == '__main__':
