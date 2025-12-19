@@ -88,16 +88,16 @@ vg autoindex --gbz ${OWN_HAP_GRAPH}.giraffe.gbz -w lr-giraffe \
     --prefix $OWN_HAP_GRAPH --no-guessing
 minimap2 -x map-hifi -d ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.fasta
 
-./align_reads_minimap2.sh ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.giraffe.gbz \
+./helper_scripts/align_reads_minimap2.sh ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.giraffe.gbz \
     ${REAL_READS}.fastq ${OWN_HAP_PREFIX}.real.minimap2
-./align_reads_giraffe.sh ${OWN_HAP_GRAPH}.giraffe.gbz \
+./helper_scripts/align_reads_giraffe.sh ${OWN_HAP_GRAPH}.giraffe.gbz \
     ${REAL_READS}.fastq ${OWN_HAP_PREFIX}.real.giraffe
 
 # ---- align to CHM13 ----
 
-./align_reads_minimap2.sh ${CHM13_GRAPH}.mmi ${CHM13_GRAPH}.giraffe.gbz \
+./helper_scripts/align_reads_minimap2.sh ${CHM13_GRAPH}.mmi ${CHM13_GRAPH}.giraffe.gbz \
     ${REAL_READS}.fastq ${CHM13_PREFIX}.real.minimap2
-./align_reads_giraffe.sh ${CHM13_GRAPH}.giraffe.gbz \
+./helper_scripts/align_reads_giraffe.sh ${CHM13_GRAPH}.giraffe.gbz \
     ${REAL_READS}.fastq ${CHM13_PREFIX}.real.giraffe
 
 # ---- align to nearest neighbor ----
@@ -132,9 +132,9 @@ else
         --prefix $neighbor_graph --no-guessing
     minimap2 -x map-hifi -d ${neighbor_graph}.mmi ${neighbor_graph}.fasta
 
-    ./align_reads_minimap2.sh ${neighbor_graph}.mmi ${neighbor_graph}.giraffe.gbz \
+    ./helper_scripts/align_reads_minimap2.sh ${neighbor_graph}.mmi ${neighbor_graph}.giraffe.gbz \
         ${REAL_READS}.fastq ${NEIGHBOR_PREFIX}.real.minimap2
-    ./align_reads_giraffe.sh ${neighbor_graph}.giraffe.gbz \
+    ./helper_scripts/align_reads_giraffe.sh ${neighbor_graph}.giraffe.gbz \
         ${REAL_READS}.fastq ${NEIGHBOR_PREFIX}.real.giraffe
 fi
 
@@ -158,7 +158,7 @@ do
         --workflow lr-giraffe --gbz ${real_graph}.giraffe.gbz
 
     # Align reads to sampled graph
-    ./align_reads_giraffe.sh ${real_graph}.giraffe.gbz ${REAL_READS}.fastq $real_out
+    ./helper_scripts/align_reads_giraffe.sh ${real_graph}.giraffe.gbz ${REAL_READS}.fastq $real_out
 
     # Need GFA for later node usage analysis
     vg convert --gfa-out ${real_graph}.giraffe.gbz > ${real_graph}.gfa
