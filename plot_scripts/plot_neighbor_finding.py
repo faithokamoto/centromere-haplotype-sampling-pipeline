@@ -82,7 +82,7 @@ def read_sample_table(sample_table_path: str) -> Dict[str, Tuple[str, int]]:
     Returns
     -------
     Dict[str, Tuple[str, int]]
-        {path name : (haplotype name, optimal N)} dictionary.
+        {haplo name : (path name, optimal N)} dictionary.
     """
     haplo_names = dict()
     with open(sample_table_path, 'r') as file:
@@ -90,7 +90,7 @@ def read_sample_table(sample_table_path: str) -> Dict[str, Tuple[str, int]]:
             parts = line.strip().split(',')
             if len(parts) == 4:
                 path_name, _, haplo_name, optimal_n = parts
-                haplo_names[path_name] = (haplo_name, int(optimal_n))
+                haplo_names[haplo_name] = (path_name, int(optimal_n))
     return haplo_names
 
 def read_sampled_haplotypes(log_file: str, 
@@ -188,9 +188,65 @@ def plot_score_drop(all_sampled_haplotypes: Dict[str, List[Tuple[str, float]]],
     sorted_x = sorted(y_values.keys())
     sorted_y = [avg_y_values[x] for x in sorted_x]
     # Plot the average Y values
-    ax.plot(sorted_x, sorted_y, marker='o')
+    ax.plot(sorted_x, sorted_y, marker='o', color='black')
     ax.set_xlabel('Dist from optimal N')
     ax.set_ylabel('Drop from max score')
+
+def get_nearest_dist_data(distance_matrix: Dict[str, Dict[str, float]],
+                          sampled_haplotypes: List[Tuple[str, float]],
+                          path_name: str) -> Tuple[float, float]:
+    """Get distance to nearest true & nearest sampled neighbor.
+    
+    Parameters
+    ----------
+    distance_matrix : Dict[str, Dict[str, float]]
+        {hap1: {hap2: distance}} dictionary.
+    sampled_haplotypes : List[Tuple[str, float]]
+        A list of (haplotype, score) tuples for sampled haplotypes.
+        Should be sorted already by score in descending order.
+    path_name : str
+        The path name of the haplotype in the distance matrix.
+
+    Returns
+    -------
+    Tuple[float, float]
+        (distance to nearest true neighbor, distance to first sampled)
+    """
+    best_neighbor = (None, float('inf'))
+    if path_name not in distance_matrix:
+        return (float('inf'), float('inf'))
+    for neighbor, dist in distance_matrix[path_name].items():
+        if dist < best_neighbor[1]:
+            best_neighbor = (neighbor, dist)
+    first_sampled = sampled_haplotypes[0][0]
+    nearest_sampled_dist = distance_matrix[path_name][first_sampled]
+    return best_neighbor[1], nearest_sampled_dist
+
+def plot_nearest_dist(distance_matrix: Dict[str, Dict[str, float]],
+                      all_sampled_haplotypes: Dict[str, List[Tuple[str, float]]],
+                      sample_table: Dict[str, List[Tuple[str, float]]],
+                      ax: plt.Axes) -> None:
+    """Plot the dist to true neighbor vs. dist to first sampled.
+
+    Parameters
+    ----------
+    distance_matrix : Dict[str, Dict[str, float]]
+        {hap1: {hap2: distance}} dictionary.
+    all_sampled_haplotypes : Dict[str, List[Tuple[str, float]]]
+        A dictionary mapping haplotype names to their sampled haplotypes.
+    sample_table : Dict[str, Tuple[str, int]]
+        A dictionary mapping haplotype names to their path name and optimal N.
+    ax : plt.Axes:
+        The matplotlib Axes object to plot on.
+    """
+    for haplo_name, sampled_haplotypes in all_sampled_haplotypes.items():
+        nearest_true_dist, nearest_sampled_dist = get_nearest_dist_data(
+            distance_matrix, sampled_haplotypes, sample_table[haplo_name][0])
+        if nearest_true_dist != float('inf'):
+            ax.plot(nearest_true_dist, nearest_sampled_dist, 
+                    marker='o', color='black')
+    ax.set_xlabel('Dist to true neighbor')
+    ax.set_ylabel('Dist to first sampled')
 
 def plot_neighbor_finding(distance_matrix: Dict[str, Dict[str, float]], 
                           sample_table: Dict[str, Tuple[str, int]],
@@ -201,6 +257,8 @@ def plot_neighbor_finding(distance_matrix: Dict[str, Dict[str, float]],
     ----------
     distance_matrix : Dict[str, Dict[str, float]]
         {hap1: {hap2: distance}} dictionary.
+    sample_table : Dict[str, Tuple[str, int]]
+        {haplo name : (path name, optimal N)} dictionary.
     log_file : str
         Path to the log file.
     output_file : str
@@ -209,11 +267,13 @@ def plot_neighbor_finding(distance_matrix: Dict[str, Dict[str, float]],
     _, axs = plt.subplots(nrows=2, ncols=2, figsize=(10, 6))
     all_sampled_haplotypes = {}
     all_optimal_ns = {}
-    for (haplo_name, optimal_n) in sample_table.values():
+    for haplo_name, (_, optimal_n) in sample_table.items():
         sampled_haplotypes = read_sampled_haplotypes(log_file, haplo_name)
         all_sampled_haplotypes[haplo_name] = sampled_haplotypes
         all_optimal_ns[haplo_name] = optimal_n
     plot_score_drop(all_sampled_haplotypes, all_optimal_ns, axs[0][0])
+    plot_nearest_dist(distance_matrix, all_sampled_haplotypes, 
+                      sample_table, axs[0][1])
     plt.savefig(output_file)
 
 if __name__ == '__main__':
