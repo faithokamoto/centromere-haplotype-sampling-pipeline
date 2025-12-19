@@ -89,6 +89,7 @@ column, that the optimal *n* is as in the second column.
         - % of total that could be found?
         - 0.15 threshold?
     - [X] Plot dist to nearest neighbor vs. dist to nearest subsampled
+- [ ] Clean up plotting code (eek)
 - [ ] Have pipeline run diploid samples instead of haploid
 - [ ] Attempt to do typing
 

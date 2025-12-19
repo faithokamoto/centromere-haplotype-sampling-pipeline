@@ -245,6 +245,7 @@ def plot_nearest_dist(distance_matrix: Dict[str, Dict[str, float]],
         if nearest_true_dist != float('inf'):
             ax.plot(nearest_true_dist, nearest_sampled_dist, 
                     marker='o', color='black')
+    ax.axline((0, 0), color='red', slope=1)
     ax.set_xlabel('Dist to true neighbor')
     ax.set_ylabel('Dist to first sampled')
 
