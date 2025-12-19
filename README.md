@@ -80,8 +80,9 @@ column, that the optimal *n* is as in the second column.
     - [X] Decide which samples/haplotypes are hopeless
     - [X] Rank based on identity scores
     - [ ] Rank (tiebreak?) based on node usage stats
-- [ ] Can the haplotype sampler itself guess when to stop?
-    - [ ] Plot score changes around optimal number
+- [X] Can the haplotype sampler itself guess when to stop?
+    **NO**: no obvious drop
+    - [X] Plot score changes around optimal number
 - [ ] Find "correctness" using distance matrix / nearby samples
     - [ ] Plot # of neighbors found within optimal subsampling
         - Also care about "fake" neighbors that were swept up?
