@@ -9,30 +9,21 @@ from typing import Dict
 
 import matplotlib.pyplot as plt
 
+# Where the alignment TSVs live
 PROJ_DIR = '/private/groups/patenlab/fokamoto/centrolign'
 LINEAR_DIR = f'{PROJ_DIR}/alignments/linear_refs/'
 SAMPLED_DIR = f'{PROJ_DIR}/alignments/leave_one_out/'
 
+# I/O file locations
 INPUT_FILE = 'test_samples.txt'
 OUTPUT_FILE = 'plot_outputs/avg_identities.png'
 
 LABELS = ['Native Haplotype', 'Optimal # Sampled', 
           'Matrix Neighbor', '1 sampled', 'CHM13']
+"""Conditions to plot, from bottom to top"""
 
 def get_identity_tsv_avg(tsv_file: str) -> float:
-    """Read read identity from a TSV file.
-
-    Parameters
-    ----------
-    tsv_file : str
-        Path to the TSV file.
-
-    Returns
-    -------
-    identities : Dict[str, float]
-        A dictionary mapping read names to their identity values.
-    """
-    
+    """Average read identity from a TSV file."""
     identities = []
     with open(tsv_file, 'r') as f:
         reader = csv.DictReader(f, delimiter='\t')
@@ -41,18 +32,7 @@ def get_identity_tsv_avg(tsv_file: str) -> float:
     return sum(identities) / len(identities)
 
 def get_sample_avgs(sample_name: str, optimal_hap: int) -> Dict[str, float]:
-    """Get average identities for a given sample.
-
-    Parameters
-    ----------
-    sample_name : str
-        The name of the sample.
-
-    Returns
-    -------
-    avgs : Dict[str, float]
-        A dictionary mapping conditions to their average identity values.
-    """
+    """Get average identities for a given sample."""
     avgs = dict()
     filenames = [f'{LINEAR_DIR}/{sample_name}.own_hap.real.giraffe.tsv',
                  f'{SAMPLED_DIR}/real_{sample_name}.{optimal_hap}haps.tsv',
