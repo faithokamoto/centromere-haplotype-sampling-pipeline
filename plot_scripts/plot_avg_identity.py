@@ -40,9 +40,13 @@ def get_sample_avgs(sample_name: str, optimal_hap: int) -> Dict[str, float]:
                  f'{SAMPLED_DIR}/real_{sample_name}.1haps.tsv',
                  f'{LINEAR_DIR}/{sample_name}.chm13.real.giraffe.tsv']
     avgs[LABELS[0]] = get_identity_tsv_avg(filenames[0])
-    # Only use haplotype sampling for non-hopeless samples
+
     if optimal_hap > 0:
+        # Only use haplotype sampling for non-hopeless samples
         avgs[LABELS[1]] = get_identity_tsv_avg(filenames[1])
+    else:
+        # Otherwise, use 1 sampled haplotype
+        avgs[LABELS[1]] = get_identity_tsv_avg(filenames[3])
     # This file might not exist if no neighbor was found    
     try:
         avgs[LABELS[2]] = get_identity_tsv_avg(filenames[2])
