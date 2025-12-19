@@ -104,19 +104,24 @@ minimap2 -x map-hifi -d ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.fasta
 
 # Get nearest neighbor
 num_neighbors=`grep $ORIG_PATH_NAME $DISTS | wc -l`
+echo "Found $num_neighbors neighbors for $ORIG_PATH_NAME"
 if [ $num_neighbors -lt 1 ]; then
     echo "Could not find nearest neighbor for $ORIG_PATH_NAME"
 else
     nearest_neighbor_line=`grep $ORIG_PATH_NAME $DISTS | sed 's/,/\t/g' | sort -k3 -n | head -1`
-    nearest_neighbor=`echo $nearest_neighbor_line | cut -f1-2 | tr "\t" "\n" | grep -v $ORIG_PATH_NAME`
+    echo "Nearest neighbor line: $nearest_neighbor_line"
+    nearest_neighbor=`echo $nearest_neighbor_line | cut -f1-2 -d " " | tr " " "\n" | grep -v $ORIG_PATH_NAME`
+    neighbor_sample_id=`echo $nearest_neighbor | cut -f1 -d "."`
+    neighbor_haplo_num=`echo $nearest_neighbor | cut -f2 -d "."`
+    neighbor_path_name="${neighbor_sample_id}#${neighbor_haplo_num}#${nearest_neighbor}#0"
+    echo "Aligning to nearest neighbor: $neighbor_path_name"
     neighbor_graph=$PROJ_DIR/graph/linear_refs/$nearest_neighbor
-    echo "Aligning to nearest neighbor: $nearest_neighbor"
 
-    vg paths --paths-by $nearest_neighbor --extract-fasta -x $BIG_GRAPH.gbz > ${neighbor_graph}.fasta
+    vg paths --paths-by $neighbor_path_name --extract-fasta -x $BIG_GRAPH.gbz > ${neighbor_graph}.fasta
     # Avoid auto-conversion of name
-    sed "s/${PATH_NAME}/${ORIG_PATH_NAME}/" -i ${neighbor_graph}.fasta
+    sed "s/${neighbor_path_name}/${nearest_neighbor}/" -i ${neighbor_graph}.fasta
     # Avoid reusing an old index
-    rm ${neighbor_graph}.fasta.fai
+    rm -f ${neighbor_graph}.fasta.fai
     # Convert to GBZ
     vg construct --reference ${neighbor_graph}.fasta -m 1024 > ${neighbor_graph}.vg
     vg gbwt --index-paths -x ${neighbor_graph}.vg -o ${neighbor_graph}.gbwt

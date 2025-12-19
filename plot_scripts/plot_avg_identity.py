@@ -16,7 +16,8 @@ SAMPLED_DIR = f'{PROJ_DIR}/alignments/leave_one_out/'
 INPUT_FILE = 'test_samples.txt'
 OUTPUT_FILE = 'plot_outputs/avg_identities.png'
 
-LABELS = ['Native Haplotype', 'Optimal # Sampled', '1 sampled', 'CHM13']
+LABELS = ['Native Haplotype', 'Optimal # Sampled', 
+          'Matrix Neighbor', '1 sampled', 'CHM13']
 
 def get_identity_tsv_avg(tsv_file: str) -> float:
     """Read read identity from a TSV file.
@@ -53,11 +54,23 @@ def get_sample_avgs(sample_name: str, optimal_hap: int) -> Dict[str, float]:
         A dictionary mapping conditions to their average identity values.
     """
     avgs = dict()
-    avgs[LABELS[0]] = get_identity_tsv_avg(f'{LINEAR_DIR}/{sample_name}.own_hap.real.giraffe.tsv')
+    filenames = [f'{LINEAR_DIR}/{sample_name}.own_hap.real.giraffe.tsv',
+                 f'{SAMPLED_DIR}/real_{sample_name}.{optimal_hap}haps.tsv',
+                 f'{LINEAR_DIR}/{sample_name}.neighbor.real.giraffe.tsv',
+                 f'{SAMPLED_DIR}/real_{sample_name}.1haps.tsv',
+                 f'{LINEAR_DIR}/{sample_name}.chm13.real.giraffe.tsv']
+    avgs[LABELS[0]] = get_identity_tsv_avg(filenames[0])
+    # Only use haplotype sampling for non-hopeless samples
     if optimal_hap > 0:
-        avgs[LABELS[1]] = get_identity_tsv_avg(f'{SAMPLED_DIR}/real_{sample_name}.{optimal_hap}haps.tsv')
-    avgs[LABELS[2]] = get_identity_tsv_avg(f'{SAMPLED_DIR}/real_{sample_name}.1haps.tsv')
-    avgs[LABELS[3]] = get_identity_tsv_avg(f'{LINEAR_DIR}/{sample_name}.chm13.real.giraffe.tsv')
+        avgs[LABELS[1]] = get_identity_tsv_avg(filenames[1])
+    # This file might not exist if no neighbor was found    
+    try:
+        avgs[LABELS[2]] = get_identity_tsv_avg(filenames[2])
+    except FileNotFoundError:
+        pass
+    
+    avgs[LABELS[3]] = get_identity_tsv_avg(filenames[3])
+    avgs[LABELS[4]] = get_identity_tsv_avg(filenames[4])
     return avgs
 
 def get_all_sample_avgs(sample_file: str) -> Dict[str, Dict[str, float]]:
@@ -78,7 +91,6 @@ def get_all_sample_avgs(sample_file: str) -> Dict[str, Dict[str, float]]:
         for line in f:
             parts = line.strip().split(',')
             all_avgs[parts[2]] = get_sample_avgs(parts[2], int(parts[3]))
-            print(f'{parts[2]}: {all_avgs[parts[2]]}')
     return all_avgs
 
 def plot_avgs(all_avgs: Dict[str, Dict[str, float]], output_file: str) -> None:
