@@ -53,8 +53,9 @@ for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
 4. Perform alignments (currently done with `leave_one_out_alignments.sh`)
 5. Run `guess_optimal_num_sampled_haplo.py` for each haplotype to get *n*.
 
-`./run_test_samples.sh` should guess, for each input haplotype in the first
-column, that the optimal *n* is as in the second column.
+`./slurm.sh`, submitted as a SLURM job (parallelized across haplotypes), should
+guess, for each input haplotype in the first column, that the optimal *n* is as
+in the second column. It also tries to type the cenhap (this is bad).
 
 ## Files
 
@@ -63,12 +64,12 @@ column, that the optimal *n* is as in the second column.
     - `align_reads_giraffe.sh`: align reads against a graph via `vg giraffe`
     - `align_reads_minimap2.sh`: align reads against a linear ref via `minimap2`
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
+    - `guess_cenhap.py`: guess the cenhap of an input haplotype
     - `guess_optimal_num_sampled_haplo.py`: guess optimal *n* value
     - `leave_one_out_alignments.sh`: run the leave-one-out alignments
-- **Testing**
-    - `run_test_samples.sh`: script to run the guesser on all test haplotypes
-    - `test_samples.txt`: CSV with 21 hand-selected test samples; columns are
-    path name, BED file version number, haplotype name, and optimal *n*
+- **Plotting** (in `plot_scripts/`)
+    - `plot_avg_identity.py`: plot average alignment identity across conditions
+    - `plot_neighbor_finding.py`: attempts to visualize how good neighbors are
 - **Metadata**
     - `.gitignore`: some files that I don't feel like putting on version control
     - `LICENSE`: the MIT license as it applies to this repository
@@ -91,7 +92,7 @@ column, that the optimal *n* is as in the second column.
     - [X] Plot dist to nearest neighbor vs. dist to nearest subsampled
 - [X] Clean up plotting code (eek)
 - [ ] Have pipeline run diploid samples instead of haploid
-- [ ] Attempt to do typing
+- [X] Attempt to do typing
 
 [Centrolign]: https://github.com/jeizenga/centrolign
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling

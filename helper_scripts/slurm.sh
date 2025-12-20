@@ -38,5 +38,6 @@ path_name=$(echo "$line" | cut -f1 -d ",")
 version=$(echo "$line" | cut -f2 -d ",")
 haplotype=$(echo "$line" | cut -f3 -d ",")
 echo "Running path: $path_name, version: $version"
-./leave_one_out_alignments.sh "$path_name" "$version"
-./guess_optimal_num_sampled_haplo.py "$haplotype"
+$DIR/leave_one_out_alignments.sh "$path_name" "$version"
+$DIR/guess_optimal_num_sampled_haplo.py "$haplotype"
+$DIR/guess_cenhap.py "$haplotype"
