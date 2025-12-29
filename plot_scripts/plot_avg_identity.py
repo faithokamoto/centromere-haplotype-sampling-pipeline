@@ -87,10 +87,17 @@ def plot_avgs(all_avgs: Dict[str, Dict[str, float]], output_file: str) -> None:
     plt.figure(figsize=(4, 3))
     
     for avg in all_avgs.values():
-        x = [avg[condition] for condition in LABELS if condition in avg]
-        y = [idx for idx, condition in enumerate(LABELS) if condition in avg]
+        x = [avg[condition] for condition in LABELS]
+        y = [idx for idx, condition in enumerate(LABELS)]
         plt.plot(x, y, 'o-', color='gray', linewidth=0.5)
         plt.plot(x, y, 'o', color='black')
+    for condition in LABELS:
+        vals = [avg[condition] for avg in all_avgs.values()]
+        print(f"{condition}: mean={sum(vals)/len(vals):.4f}, "
+              f"median={sorted(vals)[len(vals)//2]:.4f}, "
+              f"min={min(vals):.4f}, "
+              f"max={max(vals):.4f}, "
+              f"std={ (sum((v - sum(vals)/len(vals))**2 for v in vals)/len(vals))**0.5 :.4f}")
 
     plt.yticks(range(len(LABELS)), LABELS)
     plt.xlabel('Average Identity')
