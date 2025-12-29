@@ -153,7 +153,4 @@ do
 
     # Align reads to sampled graph
     ./helper_scripts/align_reads_giraffe.sh ${real_graph}.giraffe.gbz ${REAL_READS}.fastq $real_out
-
-    # Need GFA for later node usage analysis
-    vg convert --gfa-out ${real_graph}.giraffe.gbz > ${real_graph}.gfa
 done

@@ -77,10 +77,9 @@ in the second column. It also tries to type the cenhap (this is bad).
 
 ## TODO
 
-- [ ] Make basic and probably very bad guessing script
+- [X] Make basic and probably very bad guessing script
     - [X] Decide which samples/haplotypes are hopeless
     - [X] Rank based on identity scores
-    - [ ] Rank (tiebreak?) based on node usage stats
 - [X] Can the haplotype sampler itself guess when to stop?
     **NO**: no obvious drop
     - [X] Plot score changes around optimal number
