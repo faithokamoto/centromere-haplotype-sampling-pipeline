@@ -90,7 +90,7 @@ in the second column. It also tries to type the cenhap (this is bad).
         - 0.15 threshold?
     - [X] Plot dist to nearest neighbor vs. dist to nearest subsampled
 - [X] Clean up plotting code (eek)
-- [ ] Have pipeline run diploid samples instead of haploid
+- [X] Have pipeline run diploid samples instead of haploid
 - [X] Attempt to do typing
 
 [Centrolign]: https://github.com/jeizenga/centrolign
