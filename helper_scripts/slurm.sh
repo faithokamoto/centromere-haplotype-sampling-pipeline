@@ -31,7 +31,6 @@ source /private/home/${USER}/.bashrc
 source activate matplotlib
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
-SCRIPT=$DIR/code/sim_and_real_LOO.sh
 
 line=`head -n $SLURM_ARRAY_TASK_ID $DIR/test_samples.txt | tail -n 1`
 path_name=$(echo "$line" | cut -f1 -d ",")
