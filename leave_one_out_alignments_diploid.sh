@@ -13,7 +13,7 @@ BIG_GRAPH=$PROJ_DIR/graph/unsampled/chr12
 CHM13_GRAPH=$PROJ_DIR/graph/linear_refs/chm13.chr12asat
 OWN_HAP_GRAPH=$PROJ_DIR/graph/linear_refs/$SAMPLE_ID
 
-REAL_READS=$PROJ_DIR/to_align/real_${SAMPLE_ID}_chr12_hor_array.hifi.fastq
+REAL_READS=$PROJ_DIR/to_align/real_${SAMPLE_ID}_chr12_hor_array.hifi
 
 KMER_DIR=$PROJ_DIR/to_align/kmers
 

@@ -30,7 +30,7 @@ READS_DIR=/private/groups/patenlab/fokamoto/centrolign/to_align
 CODE_DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 SCRIPT=$CODE_DIR/code/sim_and_real_LOO.sh
 
-line=`head -n $SLURM_ARRAY_TASK_ID $CODE_DIR/test_samples.txt | tail -n 1`
+line=`head -n $SLURM_ARRAY_TASK_ID $CODE_DIR/input_data/test_samples.txt | tail -n 1`
 sample_id=$(echo "$line" | cut -f1 -d "," | cut -f1 -d ".")
 echo "Running sample: $sample_id"
 $CODE_DIR/leave_one_out_alignments_diploid.sh "$sample_id"
