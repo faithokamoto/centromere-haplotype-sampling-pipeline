@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Plot how well we found neighbor haplotypes.
 
-Plot 
+Makes a three-panel figure:
+1) Score drop vs. distance from optimal N
+2) Distance to true nearest neighbor vs. distance to first sampled neighbor
+3) Histogram of % correct neighbors found
 """
 
 from typing import Dict, List, Tuple
