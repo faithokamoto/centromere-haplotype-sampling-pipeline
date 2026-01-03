@@ -10,7 +10,7 @@ import argparse
 import csv
 import os
 
-from typing import Dict, Set, Tuple
+from typing import Dict, Set
 
 SAMPLE_TABLE = 'input_data/test_samples.txt'
 """Four-column CSV of (path name, version, haplotype name, optimal N)."""
@@ -21,7 +21,7 @@ MAX_HOPELESS_FRACTION = 0.5
 """Max fraction of reads aligned with < HOPELESS_IDENTITY_THRESHOLD identity."""
 HOPELESS_IDENTITY_THRESHOLD = 0.99
 """Identity threshold below which a read is considered poorly aligned."""
-JUMP_IDENTITY_THRESHOLD = 0.0005
+JUMP_IDENTITY_THRESHOLD = 0.005
 """Average identity change threshold to consider a jump significant."""
 
 def parse_args() -> argparse.Namespace:
@@ -160,6 +160,8 @@ def guess_optimal_n(tsv_files: Dict[int, str],
     jump_avg = 0.0
     for n in sorted(tsv_files.keys()):
         current_identities = read_identity_tsv(tsv_files[n], read_names)
+        cur_avg = calculate_average_identity(current_identities)
+        print(f"n={n}: avg identity={cur_avg:.6f}")
         # Don't bother checking out this n further if hopeless
         if is_file_hopeless(current_identities):
             continue
@@ -171,9 +173,6 @@ def guess_optimal_n(tsv_files: Dict[int, str],
             jump_avg = calculate_average_identity(current_identities)
         else:
             cur_avg = calculate_average_identity(current_identities)
-            print(f"n={n}: avg identity={cur_avg:.6f} "
-                  f"(prev jump avg={jump_avg:.6f}; "
-                  f"diff={cur_avg - jump_avg:.6f})")
             if cur_avg - jump_avg > JUMP_IDENTITY_THRESHOLD:
                 n_with_jump = n
                 jump_avg = cur_avg
