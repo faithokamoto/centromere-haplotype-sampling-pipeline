@@ -23,12 +23,15 @@ def parse_args() -> argparse.Namespace:
         description="Plot identity and accuracy from logfile."
     )
     parser.add_argument(
-        "logfile",
+        "--name", type=str, help="Sample/haplotype name."
+    )
+    parser.add_argument(
+        "--logfile",
         type=str,
         help="Path to the logfile containing identity and accuracy stats."
     )
     parser.add_argument(
-        "output_file",
+        "--output_file",
         type=str,
         help="Path to save the output plot."
     )
@@ -59,8 +62,12 @@ def get_snv_stats(logfile: str) -> List[AccuracyStats]:
                 snv_stats.append(AccuracyStats(precision, recall, recall_excl_svs))
     return snv_stats
 
-def plot_identity_and_accuracy(id_stats: List[int], snv_stats: List[AccuracyStats], output_file: str) -> None:
+def plot_identity_and_accuracy(id_stats: List[int], 
+                               snv_stats: List[AccuracyStats], 
+                               name: str,
+                               output_file: str) -> None:
     """Plot identity and accuracy from logfile."""
+    title = f'{name} stats across number of haplotypes sampled'
 
     ns = list(range(1, len(id_stats) + 1))
 
@@ -74,7 +81,7 @@ def plot_identity_and_accuracy(id_stats: List[int], snv_stats: List[AccuracyStat
 
     if len(snv_stats) == 0:
         print("No SNV stats found in logfile; skipping SNV accuracy plot.")
-        fig.suptitle('Identity vs Number of Haplotype Samples')
+        fig.suptitle(title)
         fig.tight_layout()
         fig.savefig(output_file)
         return
@@ -91,7 +98,7 @@ def plot_identity_and_accuracy(id_stats: List[int], snv_stats: List[AccuracyStat
     ax2.tick_params(axis='y', labelcolor=color)
     ax2.legend(loc='upper left')
 
-    fig.suptitle('Identity and SNV Accuracy vs Number of Haplotype Samples')
+    fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(output_file)
 
@@ -99,4 +106,5 @@ if __name__ == "__main__":
     args = parse_args()
     identity_stats = get_identity_stats(args.logfile)
     snv_stats = get_snv_stats(args.logfile)
-    plot_identity_and_accuracy(identity_stats, snv_stats, args.output_file)
+    plot_identity_and_accuracy(identity_stats, snv_stats, 
+                               args.name, args.output_file)
