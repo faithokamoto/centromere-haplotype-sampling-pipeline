@@ -165,8 +165,16 @@ do
     vg call ${real_out}.augment.pg -r ${real_out}.augment.snarls --ploidy 1 \
         -k ${real_out}.augment.pack -s $SAMPLE_NAME > ${real_out}.vcf
 
-    ./compare_snvs.py \
-        --vcf ${real_out}.vcf \
-        --truth-csv $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.500bp_95pct.csv \
-        --relaxed-truth-csv $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.10bp_95pct.csv
+    if [ -f $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.500bp_95pct.csv ]; then
+        echo "Comparing SNVs to truth for $num_hap haplotypes"
+        ./compare_snvs.py \
+            --vcf ${real_out}.vcf \
+            --truth-csv $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.500bp_95pct.csv \
+            --relaxed-truth-csv $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.10bp_95pct.csv
+    else
+        echo "WARNING: Could not find truth CSV for $ORIG_PATH_NAME, skipping comparison"
+    fi
 done
+
+./guess_optimal_num_sampled_haplo.py $SAMPLE_NAME
+./guess_cenhap.py $SAMPLE_NAME

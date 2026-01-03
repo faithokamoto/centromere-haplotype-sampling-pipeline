@@ -72,6 +72,13 @@ def plot_identity_and_accuracy(id_stats: List[int], snv_stats: List[AccuracyStat
     ax1.plot(ns, id_stats, 'o-', color=color)
     ax1.tick_params(axis='y', labelcolor=color)
 
+    if len(snv_stats) == 0:
+        print("No SNV stats found in logfile; skipping SNV accuracy plot.")
+        fig.suptitle('Identity vs Number of Haplotype Samples')
+        fig.tight_layout()
+        fig.savefig(output_file)
+        return
+
     ax2 = ax1.twinx()
     color = 'tab:red'
     ax2.set_ylabel('SNV Accuracy', color=color)

@@ -24,15 +24,14 @@
 #SBATCH --time=4:00:00
 #
 # Array job specification:
-#SBATCH --array=12,13,15
+#SBATCH --array=1-21
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
 line=`head -n $SLURM_ARRAY_TASK_ID $DIR/input_data/test_samples.txt | tail -n 1`
 path_name=$(echo "$line" | cut -f1 -d ",")
 version=$(echo "$line" | cut -f2 -d ",")
-haplotype=$(echo "$line" | cut -f3 -d ",")
 echo "Running path: $path_name, version: $version"
-$DIR/leave_one_out_alignments.sh "$path_name" "$version"
-$DIR/guess_optimal_num_sampled_haplo.py "$haplotype"
-$DIR/guess_cenhap.py "$haplotype"
+log=$DIR/log/${path_name}.log
+$DIR/leave_one_out_alignments.sh "$path_name" "$version" &> $log
+$DIR/plot_scripts/plot_identity_and_accuracy.py $log $DIR/plot_outputs/${path_name}.png
