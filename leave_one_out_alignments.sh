@@ -36,6 +36,7 @@ echo "Processing sample: $SAMPLE_NAME"
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/chr12
 DISTS=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/all_pairs/distance_matrices/chr12_r2_QC_v2_centrolign_pairwise_distance.csv
+TRUTH_CSV_DIR=/private/groups/migalab/juklucas/centrolign/variant_calling/rates/chr12/snv_calls/filtered/
 
 CHM13_GRAPH=$PROJ_DIR/graph/linear_refs/chm13.chr12asat
 OWN_HAP_GRAPH=$PROJ_DIR/graph/linear_refs/$SAMPLE_NAME
@@ -147,10 +148,25 @@ do
     # Haplotype sampling on leave-one-out graph
     vg haplotypes -t 1 -k $KMER_DIR/real_${SAMPLE_NAME}.kff -i ${BIG_GRAPH}.hapl \
         --num-haplotypes $num_hap --haploid-scoring -d ${BIG_GRAPH}.dist \
-        -g ${real_graph}.giraffe.gbz --ban-sample $SAMPLE_ID ${BIG_GRAPH}.gbz
+        -g ${real_graph}.giraffe.gbz --ban-sample $SAMPLE_ID \
+        --set-reference CHM13 --include-reference ${BIG_GRAPH}.gbz
     vg autoindex --prefix $real_graph --no-guessing \
         --workflow lr-giraffe --gbz ${real_graph}.giraffe.gbz
 
     # Align reads to sampled graph
     ./helper_scripts/align_reads_giraffe.sh ${real_graph}.giraffe.gbz ${REAL_READS}.fastq $real_out
+
+    # Call variants relative to CHM13
+    vg convert ${real_graph}.giraffe.gbz -p > ${real_graph}.pg
+    vg augment ${real_graph}.pg ${real_out}.gam -m 3 -q 5 -Q 5 \
+        -A ${real_out}.augment.gam > ${real_out}.augment.pg
+    vg snarls ${real_out}.augment.pg > ${real_out}.augment.snarls
+    vg pack -x ${real_out}.augment.pg -g ${real_out}.augment.gam -o ${real_out}.augment.pack
+    vg call ${real_out}.augment.pg -r ${real_out}.augment.snarls --ploidy 1 \
+        -k ${real_out}.augment.pack -s $SAMPLE_NAME > ${real_out}.vcf
+
+    ./compare_snvs.py \
+        --vcf ${real_out}.vcf \
+        --truth-csv $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.500bp_95pct.csv \
+        --relaxed-truth-csv $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.10bp_95pct.csv
 done
