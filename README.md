@@ -69,6 +69,7 @@ in the second column. It also tries to type the cenhap (this is bad).
     - `leave_one_out_alignments.sh`: run the leave-one-out alignments
 - **Plotting** (in `plot_scripts/`)
     - `plot_avg_identity.py`: plot average alignment identity across conditions
+    - `plot_identity_and_accuracy.py`: plot ID % and SNV calling across *n*s
     - `plot_neighbor_finding.py`: attempts to visualize how good neighbors are
 - **Metadata**
     - `.gitignore`: some files that I don't feel like putting on version control
