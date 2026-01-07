@@ -177,4 +177,3 @@ do
 done
 
 ./guess_optimal_num_sampled_haplo.py $SAMPLE_NAME
-./guess_cenhap.py $SAMPLE_NAME

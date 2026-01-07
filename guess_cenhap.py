@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guess optimal *n* for how many haplotypes to sample.
+"""Guess sample cenhap.
 
 Input a haplotype name and this script will attempt to guess
 what cenhap it should be, based on the haplotyeps sampled at
@@ -10,32 +10,48 @@ import argparse
 
 from typing import Dict, List, Tuple
 
-SAMPLE_TABLE = 'input_data/test_samples.txt'
 """Four-column CSV of (path name, version, haplotype name, optimal N)."""
 CENHAP_TABLE = '/private/groups/migalab/juklucas/centrolign/notes/correct_cenhaps_chr12/chr12_cenhap_assignments_final.csv'
-LOG_FILE = 'log/test_output.txt'
 
 SampledHaplo = List[Tuple[str, float]]
 """List of (haplotype, score) tuples."""
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Guess optimal number of haplotypes to sample")
-    parser.add_argument("haplotype", type=str,
-                        help="Name of the haplotype (e.g., 'HG02622_mat')")
+    parser = argparse.ArgumentParser(description="Guess cenhap(s) of input")
+    parser.add_argument("--ploidy", type=int, required=True, 
+                        help="Ploidy of the sample")
+    parser.add_argument("--logfile", type=str, required=True, 
+                        help="Log file to read")
     return parser.parse_args()
 
-def read_metadata(sample_table_file: str, haplo_name: str) -> Tuple[str, int]:
-    """Read the optimal *n* & path name for a given haplotype"""
-    with open(sample_table_file, 'r') as file:
-        for line in file:
-            path_name, _, name, optimal_n = line.strip().split(',')
-            if name == haplo_name:
-                return path_name, int(optimal_n)
-    raise ValueError(f"Haplotype {haplo_name} not found in sample table.")
+def get_path_name(name: str, ploidy: int) -> set:
+    """Get paths from a haplotype or sample name."""
+    if ploidy == 2:
+        return {f"{name}.1", f"{name}.2"}
+    elif ploidy == 1:
+        if name.endswith('_pat') or name.endswith('_hap1'):
+            return {name.split('_')[0] + '.1'}
+        elif name.endswith('_mat') or name.endswith('_hap2'):
+            return {name.split('_')[0] + '.2'}
+    else:
+        raise ValueError("Ploidy must be 1 or 2.")
 
-def read_sampled_haplotypes(log_file: str, haplo_name: str, n_hap: int) -> SampledHaplo:
+def read_optimal_n(log_file: str) -> Tuple[str, int]:
+    """Read name and optimal *n* from log file."""
+    with open(log_file, 'r') as file:
+        # Processing sample: <name>
+        name = file.readline().strip().split()[-1]
+        print("Processing sample:", name)
+        for line in file:
+            if f"haplotypes for {name}" in line:
+                # Sample <n> haplotypes for <name>
+                return name, int(line.strip().split()[1])
+            if line.strip() == f"{name} is hopeless.":
+                return name, 0
+    raise ValueError(f"{name} not found in sample table.")
+
+def read_sampled_haplotypes(log_file: str, name: str, n_hap: int) -> SampledHaplo:
     """Read haplotypes sampled for a given input in a log file."""
     sampled_haplotypes = []
     # How far have we read so far?
@@ -47,7 +63,7 @@ def read_sampled_haplotypes(log_file: str, haplo_name: str, n_hap: int) -> Sampl
             if found_sample_run and ('autoindex' in line or 'Sampling' in line):
                 break
             # Start of this sample's log
-            if 'Processing sample' in line and haplo_name in line:
+            if 'Processing sample' in line and name in line:
                 found_haplo_name = True
             # Start of this sample's target sampling run
             if found_haplo_name and f'Sampling {n_hap} haplotypes' in line:
@@ -71,7 +87,7 @@ def read_cenhap_table(cenhap_file: str) -> Dict[str, str]:
             cenhap_table[haplo] = cenhap
     return cenhap_table
 
-def guess_cenhap(sampled: SampledHaplo, cenhap_table: Dict[str, str]) -> str:
+def guess_cenhap(sampled: SampledHaplo, cenhap_table: Dict[str, str], ploidy: int) -> str:
     """Guess the cenhap for the sampled haplotypes."""
     # Normalize scores so minimum is 1
     min_score = min(score for _, score in sampled)
@@ -87,20 +103,32 @@ def guess_cenhap(sampled: SampledHaplo, cenhap_table: Dict[str, str]) -> str:
     if not cenhap_scores:
         return 'Unknown'
     else:
-        return max(cenhap_scores.items(), key=lambda x: x[1])[0]
+        if ploidy == 2:
+            # For diploid, return both cenhaps separated by '/'
+            sorted_cenhaps = sorted(cenhap_scores.items(), key=lambda x: x[1], reverse=True)
+            if len(sorted_cenhaps) >= 2:
+                return f"{sorted_cenhaps[0][0]} {sorted_cenhaps[1][0]}"
+            else:
+                return sorted_cenhaps[0][0]
+        else:
+            return max(cenhap_scores.items(), key=lambda x: x[1])[0]
 
 if __name__ == '__main__':
     args = parse_args()
-    haplo_name = args.haplotype
 
-    path_name, optimal_n = read_metadata(SAMPLE_TABLE, haplo_name)
+    if args.ploidy not in (1, 2):
+        raise ValueError("Ploidy must be 1 or 2.")
+
+    name, optimal_n = read_optimal_n(args.logfile)
     if optimal_n == 0:
-        print(f"Haplotype {haplo_name} has optimal n=0; cannot guess cenhap.")
+        print(f"{name} has optimal n=0; cannot guess cenhap.")
         exit(0)
-    sampled_haplotypes = read_sampled_haplotypes(LOG_FILE, haplo_name, optimal_n)
+    sampled_haplotypes = read_sampled_haplotypes(args.logfile, name, optimal_n)
     cenhap_table = read_cenhap_table(CENHAP_TABLE)
 
-    guessed_cenhap = guess_cenhap(sampled_haplotypes, cenhap_table)
-    correct_cenhap = cenhap_table.get(path_name, 'Unknown')
-    print(f"Guessed cenhap for {haplo_name} (optimal n={optimal_n}): "\
-          f"{guessed_cenhap} (correct: {correct_cenhap})")
+    guessed_cenhap = guess_cenhap(sampled_haplotypes, cenhap_table, args.ploidy)
+    correct_cenhap = ''
+    for path in get_path_name(name, args.ploidy):
+        correct_cenhap += cenhap_table.get(path, 'Unknown') + ' '
+    print(f"Guessed cenhap for {name} (optimal n={optimal_n}): "\
+          f"{guessed_cenhap} (correct: {correct_cenhap.strip()})")

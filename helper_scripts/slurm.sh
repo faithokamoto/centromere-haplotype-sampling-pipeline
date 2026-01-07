@@ -35,5 +35,6 @@ haplotype=$(echo "$line" | cut -f3 -d ",")
 echo "Running path: $path_name, version: $version"
 log=$DIR/log/${path_name}.log
 $DIR/leave_one_out_alignments.sh "$path_name" "$version" &> $log
+$DIR/guess_cenhap.py --ploidy 1 --logfile $log &>> $log
 $DIR/plot_scripts/plot_identity_and_accuracy.py \
     --name $haplotype --logfile $log --output_file $DIR/plot_outputs/${path_name}.png
