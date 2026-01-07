@@ -12,7 +12,7 @@ from typing import Dict, List, Tuple
 
 SAMPLE_TABLE = 'input_data/test_samples.txt'
 """Four-column CSV of (path name, version, haplotype name, optimal N)."""
-CENHAP_TABLE = 'input_data/chr12_r2_QC_v2_centrolign_cenhap_assignments.csv'
+CENHAP_TABLE = '/private/groups/migalab/juklucas/centrolign/notes/correct_cenhaps_chr12/chr12_cenhap_assignments_final.csv'
 LOG_FILE = 'log/test_output.txt'
 
 SampledHaplo = List[Tuple[str, float]]
@@ -64,6 +64,7 @@ def read_cenhap_table(cenhap_file: str) -> Dict[str, str]:
     """Read the cenhap assignment table."""
     cenhap_table = {}
     with open(cenhap_file, 'r') as file:
+        file.readline()  # Skip header
         for line in file:
             parts = line.strip().split(',')
             haplo, cenhap = parts[0], parts[1]
@@ -83,7 +84,10 @@ def guess_cenhap(sampled: SampledHaplo, cenhap_table: Dict[str, str]) -> str:
         if cenhap is not None:
             cenhap_scores[cenhap] = cenhap_scores.get(cenhap, 0) + score
     # Guess the cenhap with the highest score
-    return max(cenhap_scores.items(), key=lambda x: x[1])[0]
+    if not cenhap_scores:
+        return 'Unknown'
+    else:
+        return max(cenhap_scores.items(), key=lambda x: x[1])[0]
 
 if __name__ == '__main__':
     args = parse_args()
