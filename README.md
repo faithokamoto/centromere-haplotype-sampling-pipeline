@@ -8,7 +8,7 @@ which has undergone [haplotype sampling][HaplotypeSampling].
 
 ## Dependencies
 
-- [`vg`][vg]: currently commit `c4c189272dc02750774bac921c2c5996e486ad7d`
+- [`vg`][vg]: currently version `v1.71.0` with a few modifications
 - [Python 3][Python]: currently using v3.14.1
 
 ## Background
@@ -77,21 +77,7 @@ in the second column. It also tries to type the cenhap (this is bad).
 
 ## TODO
 
-- [X] Make basic and probably very bad guessing script
-    - [X] Decide which samples/haplotypes are hopeless
-    - [X] Rank based on identity scores
-- [X] Can the haplotype sampler itself guess when to stop?
-    **NO**: no obvious drop
-    - [X] Plot score changes around optimal number
-- [X] Find "correctness" using distance matrix / nearby samples
-    - [X] Plot # of neighbors found within optimal subsampling
-        - Also care about "fake" neighbors that were swept up?
-        - % of total that could be found?
-        - 0.15 threshold?
-    - [X] Plot dist to nearest neighbor vs. dist to nearest subsampled
-- [X] Clean up plotting code (eek)
-- [X] Have pipeline run diploid samples instead of haploid
-- [X] Attempt to do typing
+- [ ] call variants relative to better haplotypes
 
 [Centrolign]: https://github.com/jeizenga/centrolign
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling

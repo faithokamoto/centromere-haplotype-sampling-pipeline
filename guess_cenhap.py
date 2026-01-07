@@ -49,7 +49,7 @@ def read_optimal_n(log_file: str) -> Tuple[str, int]:
                 return name, int(line.strip().split()[1])
             if line.strip() == f"{name} is hopeless.":
                 return name, 0
-    raise ValueError(f"{name} not found in sample table.")
+    raise ValueError(f"{name} not found in log file.")
 
 def read_sampled_haplotypes(log_file: str, name: str, n_hap: int) -> SampledHaplo:
     """Read haplotypes sampled for a given input in a log file."""
