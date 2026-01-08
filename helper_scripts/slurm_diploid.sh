@@ -26,14 +26,18 @@
 # Array job specification:
 #SBATCH --array=1-21
 
-READS_DIR=/private/groups/patenlab/fokamoto/centrolign/to_align
-CODE_DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
+# Activate Conda environment
+source /private/home/${USER}/.bashrc
+source activate matplotlib
 
-line=`head -n $SLURM_ARRAY_TASK_ID $CODE_DIR/input_data/test_samples.txt | tail -n 1`
+DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
+
+line=`head -n $SLURM_ARRAY_TASK_ID $DIR/input_data/test_samples.txt | tail -n 1`
 sample_id=$(echo "$line" | cut -f1 -d "," | cut -f1 -d ".")
 echo "Running sample: $sample_id"
-$CODE_DIR/leave_one_out_alignments_diploid.sh "$sample_id"
-$CODE_DIR/guess_optimal_num_sampled_haplo.py \
- --hap1-reads $READS_DIR/real_${sample_id}_chr12_hor_array.hifi.1.fastq \
- --hap2-reads $READS_DIR/real_${sample_id}_chr12_hor_array.hifi.2.fastq \
- $sample_id
+
+log=$DIR/log/${sample_id}.log
+$DIR/leave_one_out_alignments_diploid.sh "$sample_id" &> $log
+$DIR/guess_cenhap.py --ploidy 2 --logfile $log &>> $log
+$DIR/plot_scripts/plot_identity_and_accuracy.py \
+    --name $sample_id --logfile $log --output_file $DIR/plot_outputs/${sample_id}.png

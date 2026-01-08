@@ -28,11 +28,16 @@
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
+# Activate Conda environment
+source /private/home/${USER}/.bashrc
+source activate matplotlib
+
 line=`head -n $SLURM_ARRAY_TASK_ID $DIR/input_data/test_samples.txt | tail -n 1`
 path_name=$(echo "$line" | cut -f1 -d ",")
 version=$(echo "$line" | cut -f2 -d ",")
 haplotype=$(echo "$line" | cut -f3 -d ",")
 echo "Running path: $path_name, version: $version"
+
 log=$DIR/log/${path_name}.log
 $DIR/leave_one_out_alignments.sh "$path_name" "$version" &> $log
 $DIR/guess_cenhap.py --ploidy 1 --logfile $log &>> $log

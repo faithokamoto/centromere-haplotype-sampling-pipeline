@@ -99,3 +99,8 @@ do
     # Align reads to sampled graph
     ./helper_scripts/align_reads_giraffe.sh ${real_graph}.giraffe.gbz ${REAL_READS}.fastq $real_out
 done
+
+./guess_optimal_num_sampled_haplo.py \
+    --hap1-reads ${REAL_READS}.1.fastq \
+    --hap2-reads ${REAL_READS}.2.fastq \
+    $SAMPLE_ID
