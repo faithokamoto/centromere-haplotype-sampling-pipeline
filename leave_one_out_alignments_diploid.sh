@@ -52,7 +52,8 @@ fi
 # ---- align to own haplotypes ----
 
 # Align to own haplotypes
-vg paths --paths-by $SAMPLE_ID --retain-paths -x $BIG_GRAPH.pg > ${OWN_HAP_GRAPH}.vg
+vg paths --paths-by $SAMPLE_ID --retain-paths -x $BIG_GRAPH.pg |
+    vg convert --ref-sample $SAMPLE_ID - > ${OWN_HAP_GRAPH}.vg
 vg paths --extract-fasta -x ${OWN_HAP_GRAPH}.vg > ${OWN_HAP_GRAPH}.fasta
 # Avoid reusing an old index
 rm -f ${OWN_HAP_GRAPH}.fasta.fai
