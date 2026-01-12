@@ -58,7 +58,7 @@ def collect_tsvs(name: str) -> Dict[int, str]:
                 parts = file.split(".")
                 if len(parts) != 3:
                     continue
-                num_hap_str = parts[1][0]
+                num_hap_str = parts[1][:-4]  # Remove 'haps' suffix
                 num_hap = int(num_hap_str)
                 tsv_files[num_hap] = os.path.join(TSV_DIR, file)
 
@@ -98,8 +98,8 @@ def is_file_hopeless(identities: Dict[str, float]) -> bool:
 
     Parameters
     ----------
-    tsv_file : str
-        Path to the TSV file.
+    identities : Dict[str, float]
+        A dictionary mapping read names to their identity values
 
     Returns
     -------
@@ -182,7 +182,6 @@ def guess_optimal_n(tsv_files: Dict[int, str],
 
 def read_fastq_read_names(fastq_file: str) -> Set[str]:
     """Read read names from a FASTQ file."""
-
     read_names = set()
     with open(fastq_file, 'r') as f:
         line_num = 0
