@@ -40,4 +40,4 @@ log=$DIR/log/${sample_id}.log
 $DIR/leave_one_out_alignments_diploid.sh "$sample_id" &> $log
 $DIR/guess_cenhap.py --ploidy 2 --logfile $log &>> $log
 $DIR/plot_scripts/plot_identity_and_accuracy.py \
-    --name $sample_id --logfile $log --output_file $DIR/plot_outputs/${sample_id}.png
+    --name $sample_id --logfile $log --output-file $DIR/plot_outputs/${sample_id}.png

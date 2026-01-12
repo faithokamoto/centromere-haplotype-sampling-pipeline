@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
         help="Path to the logfile containing identity and accuracy stats."
     )
     parser.add_argument(
-        "--output_file",
+        "--output-file",
         type=str,
         help="Path to save the output plot."
     )
@@ -46,6 +46,9 @@ def get_identity_stats(logfile: str) -> List[int]:
                 parts = line.strip().split('avg identity=')
                 identity = float(parts[1].split()[0])
                 avg_identities.append(identity)
+            if "Sample" in line and "haplotypes for" in line:
+                # Stop reading identities after the sampling section
+                break
     return avg_identities
 
 def get_snv_stats(logfile: str) -> List[AccuracyStats]:

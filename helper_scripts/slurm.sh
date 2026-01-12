@@ -42,4 +42,4 @@ log=$DIR/log/${path_name}.log
 $DIR/leave_one_out_alignments.sh "$path_name" "$version" &> $log
 $DIR/guess_cenhap.py --ploidy 1 --logfile $log &>> $log
 $DIR/plot_scripts/plot_identity_and_accuracy.py \
-    --name $haplotype --logfile $log --output_file $DIR/plot_outputs/${path_name}.png
+    --name $haplotype --logfile $log --output-file $DIR/plot_outputs/${path_name}.png
