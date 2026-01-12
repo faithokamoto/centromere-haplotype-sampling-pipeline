@@ -47,7 +47,7 @@ def read_optimal_n(log_file: str) -> Tuple[str, int]:
             if f"haplotypes for {name}" in line:
                 # Sample <n> haplotypes for <name>
                 return name, int(line.strip().split()[1])
-            if line.strip() == f"{name} is hopeless.":
+            if line.strip() == f"{name} is hopeless":
                 return name, 0
     raise ValueError(f"{name} not found in log file.")
 
