@@ -109,7 +109,7 @@ def guess_cenhap(sampled: SampledHaplo, cenhap_table: Dict[str, str], ploidy: in
             if len(sorted_cenhaps) >= 2:
                 return f"{sorted_cenhaps[0][0]} {sorted_cenhaps[1][0]}"
             else:
-                return sorted_cenhaps[0][0]
+                return f"{sorted_cenhaps[0][0]} {sorted_cenhaps[0][0]}"
         else:
             return max(cenhap_scores.items(), key=lambda x: x[1])[0]
 
