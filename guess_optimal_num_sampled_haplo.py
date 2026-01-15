@@ -53,7 +53,7 @@ def collect_tsvs(name: str) -> Dict[int, str]:
     tsv_files = dict()
     for _, __, files in os.walk(TSV_DIR):
         for file in files:
-            if file.startswith(f"real_{name}") and file.endswith(".tsv"):
+            if file.startswith(f"real_{name}.") and file.endswith(".tsv"):
                 # Parse real_<name>.<num_hap>haps.tsv
                 parts = file.split(".")
                 if len(parts) != 3:
