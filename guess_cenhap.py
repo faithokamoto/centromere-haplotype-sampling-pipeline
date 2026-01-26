@@ -23,10 +23,18 @@ def parse_args() -> argparse.Namespace:
                         help="Ploidy of the sample")
     parser.add_argument("--logfile", type=str, required=True, 
                         help="Log file to read")
+    parser.add_argument("--force-n", type=int, default=None,
+                        help="Force target n instead of using log file")
+    parser.add_argument("--max-n", type=int, default=None,
+                        help="Maximum n to consider (only if forcing n)")
     return parser.parse_args()
 
 def get_path_name(name: str, ploidy: int) -> set:
     """Get paths from a haplotype or sample name."""
+    if '.' in name:
+        # Already a path name
+        return {name}
+    
     if ploidy == 2:
         return {f"{name}.1", f"{name}.2"}
     elif ploidy == 1:
@@ -34,21 +42,25 @@ def get_path_name(name: str, ploidy: int) -> set:
             return {name.split('_')[0] + '.1'}
         elif name.endswith('_mat') or name.endswith('_hap2'):
             return {name.split('_')[0] + '.2'}
-    else:
-        raise ValueError("Ploidy must be 1 or 2.")
+    
+    raise ValueError("Ploidy must be 1 or 2.")
 
-def read_optimal_n(log_file: str) -> Tuple[str, int]:
+def read_optimal_n(log_file: str, force_n: int = None) -> Tuple[str, int]:
     """Read name and optimal *n* from log file."""
     with open(log_file, 'r') as file:
         # Processing sample: <name>
         name = file.readline().strip().split()[-1]
         print("Processing sample:", name)
-        for line in file:
-            if f"haplotypes for {name}" in line:
-                # Sample <n> haplotypes for <name>
-                return name, int(line.strip().split()[1])
-            if line.strip() == f"{name} is hopeless":
-                return name, 0
+        if force_n is not None:
+            return name, force_n
+        else:
+            # Read until we find the optimal n line
+            for line in file:
+                if f"haplotypes for {name}" in line:
+                    # Sample <n> haplotypes for <name>
+                    return name, int(line.strip().split()[1])
+                if line.strip() == f"{name} is hopeless":
+                    return name, 0
     raise ValueError(f"{name} not found in log file.")
 
 def read_sampled_haplotypes(log_file: str, name: str, n_hap: int) -> SampledHaplo:
@@ -87,18 +99,25 @@ def read_cenhap_table(cenhap_file: str) -> Dict[str, str]:
             cenhap_table[haplo] = cenhap
     return cenhap_table
 
-def guess_cenhap(sampled: SampledHaplo, cenhap_table: Dict[str, str], ploidy: int) -> str:
+def guess_cenhap(sampled: SampledHaplo, cenhap_table: Dict[str, str], 
+                 ploidy: int, n_to_use: int) -> str:
     """Guess the cenhap for the sampled haplotypes."""
     # Normalize scores so minimum is 1
     min_score = min(score for _, score in sampled)
     normalized = [(haplo, score - min_score + 1) for haplo, score in sampled]
     # Calculate weighted score for each cenhap type
     cenhap_scores = {}
+    cenhaps_used = 0
     for haplo, score in normalized:
         cenhap = cenhap_table.get(haplo, None)
-        print("\tHaplotype:", haplo, "Cenhap:", cenhap, "Score:", score + min_score - 1)
         if cenhap is not None:
+            cenhaps_used += 1
+            print("\tHaplotype:", haplo, "Cenhap:", 
+                  cenhap, "Score:", score + min_score - 1)
             cenhap_scores[cenhap] = cenhap_scores.get(cenhap, 0) + score
+            # Have we used enough haplotypes?
+            if cenhaps_used == n_to_use:
+                break
     # Guess the cenhap with the highest score
     if not cenhap_scores:
         return 'Unknown'
@@ -118,15 +137,20 @@ if __name__ == '__main__':
 
     if args.ploidy not in (1, 2):
         raise ValueError("Ploidy must be 1 or 2.")
+    if args.force_n is not None and args.max_n is not None:
+        if args.force_n > args.max_n:
+            raise ValueError("force-n cannot be greater than max-n.")
 
-    name, optimal_n = read_optimal_n(args.logfile)
+    name, optimal_n = read_optimal_n(args.logfile, args.force_n)
     if optimal_n == 0:
         print(f"{name} has optimal n=0; cannot guess cenhap.")
         exit(0)
-    sampled_haplotypes = read_sampled_haplotypes(args.logfile, name, optimal_n)
+    n_to_read = optimal_n if args.max_n is None else args.max_n
+    sampled_haplotypes = read_sampled_haplotypes(args.logfile, name, n_to_read)
     cenhap_table = read_cenhap_table(CENHAP_TABLE)
 
-    guessed_cenhap = guess_cenhap(sampled_haplotypes, cenhap_table, args.ploidy)
+    guessed_cenhap = guess_cenhap(sampled_haplotypes, cenhap_table,
+                                  args.ploidy, optimal_n)
     correct_cenhap = ''
     for path in get_path_name(name, args.ploidy):
         correct_cenhap += cenhap_table.get(path, 'Unknown') + ' '
