@@ -76,6 +76,20 @@ in the second column. It also tries to type the cenhap (this is bad).
     - `LICENSE`: the MIT license as it applies to this repository
     - `README.md`: this file, which explains the repository
 
+## vg modifications
+
+I insert these lines right after [haplotype selection](https://github.com/vgteam/vg/blob/2e664f07e49caca29a208b3b0f2f25c7100df5e9/src/recombinator.cpp#L2056-L2058).
+
+```c++
+for (size_t i = 0; i < selected_haplotypes.size(); i++) {
+    gbwt::size_type sequence_id = subchain.sequences[selected_haplotypes[i].first].first;
+    gbwt::size_type path_id = gbwt::Path::id(sequence_id);
+    gbwt::FullPathName path_name = this->gbz.index.metadata.fullPath(path_id);
+    cerr << "Selected haplotype " << path_name.contig_name 
+         << " with score " << selected_haplotypes[i].second << endl;
+}
+```
+
 ## TODO
 
 - [ ] call variants relative to better haplotypes
