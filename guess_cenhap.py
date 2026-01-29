@@ -149,6 +149,9 @@ if __name__ == '__main__':
         exit(0)
     n_to_read = optimal_n if args.max_n is None else args.max_n
     sampled_haplotypes = read_sampled_haplotypes(args.logfile, name, n_to_read)
+    if not sampled_haplotypes:
+        print(f"Found no sampled haplotypes for {name}")
+        exit(0)
     cenhap_table = read_cenhap_table(CENHAP_TABLE)
 
     guessed_cenhap = guess_cenhap(sampled_haplotypes, cenhap_table,
