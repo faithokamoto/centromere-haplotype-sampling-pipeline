@@ -96,7 +96,9 @@ def read_cenhap_table(cenhap_file: str) -> Dict[str, str]:
         for line in file:
             parts = line.strip().split(',')
             haplo, cenhap = parts[0], parts[1]
-            cenhap_table[haplo] = cenhap
+            # Handle missing cenhap assignments
+            if cenhap != '':
+                cenhap_table[haplo] = cenhap
     return cenhap_table
 
 def guess_cenhap(sampled: SampledHaplo, cenhap_table: Dict[str, str], 
