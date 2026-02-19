@@ -50,6 +50,8 @@ OWN_HAP_PREFIX=$PROJ_DIR/alignments/linear_refs/${SAMPLE_NAME}.own_hap
 NEIGHBOR_PREFIX=$PROJ_DIR/alignments/linear_refs/${SAMPLE_NAME}.neighbor
 CHM13_PREFIX=$PROJ_DIR/alignments/linear_refs/${SAMPLE_NAME}.chm13
 
+AUGREF_PREFIX=augref_CHM13
+
 # ---- get reads to align ----
 
 if [ ! -f ${REAL_READS}.fastq ]; then
@@ -148,8 +150,14 @@ do
     # Haplotype sampling on leave-one-out graph
     vg haplotypes -t 1 -k $KMER_DIR/real_${SAMPLE_NAME}.kff -i ${BIG_GRAPH}.hapl \
         --num-haplotypes $num_hap --haploid-scoring -d ${BIG_GRAPH}.dist \
-        -g ${real_graph}.giraffe.gbz --ban-sample $SAMPLE_ID \
-        --set-reference CHM13 --include-reference ${BIG_GRAPH}.gbz
+        -g ${real_graph}.augref.gbz --ban-sample $SAMPLE_ID \
+        --set-reference $AUGREF_PREFIX --include-reference ${BIG_GRAPH}.gbz
+    vg convert ${real_graph}.augref.gbz -p > ${real_graph}.augref.pg
+
+    # Same thing but without augref paths for read alignment
+    vg haplotypes -t 1 -k $KMER_DIR/real_${SAMPLE_NAME}.kff -i ${BIG_GRAPH}.hapl \
+        --num-haplotypes $num_hap --haploid-scoring -d ${BIG_GRAPH}.dist \
+        -g ${real_graph}.giraffe.gbz --ban-sample $SAMPLE_ID ${BIG_GRAPH}.gbz
     vg autoindex --prefix $real_graph --no-guessing \
         --workflow lr-giraffe --gbz ${real_graph}.giraffe.gbz
 
@@ -157,8 +165,7 @@ do
     ./helper_scripts/align_reads_giraffe.sh ${real_graph}.giraffe.gbz ${REAL_READS}.fastq $real_out
 
     # Call variants relative to CHM13
-    vg convert ${real_graph}.giraffe.gbz -p > ${real_graph}.pg
-    vg augment ${real_graph}.pg ${real_out}.gam -m 3 -q 5 -Q 5 \
+    vg augment ${real_graph}.augref.pg ${real_out}.gam -m 3 -q 5 -Q 5 \
         -A ${real_out}.augment.gam > ${real_out}.augment.pg
     vg snarls ${real_out}.augment.pg > ${real_out}.augment.snarls
     vg pack -x ${real_out}.augment.pg -g ${real_out}.augment.gam -o ${real_out}.augment.pack
