@@ -7,9 +7,13 @@ GRAPH=$1
 
 # PG format needs nodes with length <= 1024bp for distance indexing
 vg convert --gfa-in $GRAPH.gfa | vg mod --chop 1024 - > $GRAPH.pg
-# Convert to GBZ format by smooshing GBWT and PG together
-vg gbwt --index-paths -x $GRAPH.pg -o $GRAPH.gbwt
-vg gbwt --gbz-format -x $GRAPH.pg $GRAPH.gbwt -g $GRAPH.gbz
+# Augmented reference coordinates to use for variant calling
+vg paths -Q CHM13 -x $GRAPH.pg \
+    --compute-augref --augref-sample augref_CHM13 --min-augref-len 50 \
+    --augref-segs $GRAPH.augref.segs.tsv > $GRAPH.augref.vg
+# Convert to GBZ format by smooshing GBWT and VG together
+vg gbwt --index-paths -x $GRAPH.augref.vg -o $GRAPH.gbwt
+vg gbwt --gbz-format -x $GRAPH.augref.vg $GRAPH.gbwt -g $GRAPH.gbz
 
 vg gbwt -r $GRAPH.ri -Z $GRAPH.gbz
 # Distanceless index is much quicker to make and works for vg haplotypes

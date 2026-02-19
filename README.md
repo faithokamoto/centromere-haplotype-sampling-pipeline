@@ -1,15 +1,12 @@
 # Centromere haplotype sampling pipeline
 
-> [!WARNING]
-> Under active development.
-
-This is a pipeline which aligns centromeric reads against a pangenome graph
-which has undergone [haplotype sampling][HaplotypeSampling].
+This pipeline aligns centromeric reads against a pangenome graph which has
+undergone [haplotype sampling][HaplotypeSampling].
 
 ## Dependencies
 
-- [`vg`][vg]: currently version `v1.71.0` with a few modifications
-- [Python 3][Python]: currently using v3.14.1
+- [`vg`][vg]: currently version `v1.72.0` with a few modifications
+- [Python 3][Python]: currently using `v3.14.1`
 
 ## Background
 

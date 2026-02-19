@@ -163,7 +163,7 @@ do
     vg snarls ${real_out}.augment.pg > ${real_out}.augment.snarls
     vg pack -x ${real_out}.augment.pg -g ${real_out}.augment.gam -o ${real_out}.augment.pack
     vg call ${real_out}.augment.pg -r ${real_out}.augment.snarls --ploidy 1 \
-        -k ${real_out}.augment.pack -s $SAMPLE_NAME > ${real_out}.vcf
+        -k ${real_out}.augment.pack -s $SAMPLE_NAME --ref-sample augref_CHM13 > ${real_out}.vcf
 
     if [ -f $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.500bp_95pct.csv ]; then
         echo "Comparing SNVs to truth for $num_hap haplotypes"
