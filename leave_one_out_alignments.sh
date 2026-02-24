@@ -1,31 +1,29 @@
 #!/bin/bash
 # Run haplotype sampling with a leave-one-out graph on chr12
-# Usage: leave_one_out_alignments.sh <original path name> <version>
-# Example: leave_one_out_alignments.sh HG00099.1 v1
+# Usage: leave_one_out_alignments.sh <original path name>
+# Example: leave_one_out_alignments.sh HG00099.1
 
 # ---- process arguments ----
 
 ORIG_PATH_NAME=$1
-VERSION=$2
 SAMPLE_ID=`echo "$ORIG_PATH_NAME" | cut -f1 -d "." `
 HAPLO_NUM=`echo "$ORIG_PATH_NAME" | cut -f2 -d "." `
 PATH_NAME="${SAMPLE_ID}#${HAPLO_NUM}#${ORIG_PATH_NAME}#0"
 
 BED_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/extract_hors_HPRC/release2/contiguous_HORs_bed_files
-BED_SUFFIX=hprc_r2_${VERSION}_hor_arrays.bed
 
-# Figure out what the sample name is
-if [ ! -f "${BED_DIR}/${SAMPLE_ID}_hap1_${BED_SUFFIX}" ]; then
-    if [ "$HAPLO_NUM" -eq "1" ]; then
-        SAMPLE_NAME=${SAMPLE_ID}_pat
-    else
-        SAMPLE_NAME=${SAMPLE_ID}_mat
-    fi
-else
+if ls "${BED_DIR}/${SAMPLE_ID}_hap1_*" &>/dev/null
+then
     if [ "$HAPLO_NUM" -eq "1" ]; then
         SAMPLE_NAME=${SAMPLE_ID}_hap1
     else
         SAMPLE_NAME=${SAMPLE_ID}_hap2
+    fi
+else
+    if [ "$HAPLO_NUM" -eq "1" ]; then
+        SAMPLE_NAME=${SAMPLE_ID}_pat
+    else
+        SAMPLE_NAME=${SAMPLE_ID}_mat
     fi
 fi
 
@@ -170,17 +168,14 @@ do
     vg snarls ${real_out}.augment.pg > ${real_out}.augment.snarls
     vg pack -x ${real_out}.augment.pg -g ${real_out}.augment.gam -o ${real_out}.augment.pack
     vg call ${real_out}.augment.pg -r ${real_out}.augment.snarls --ploidy 1 \
-        -k ${real_out}.augment.pack -s $SAMPLE_NAME --ref-sample augref_CHM13 > ${real_out}.vcf
+        -k ${real_out}.augment.pack -s $SAMPLE_NAME --path-prefix $AUGREF_PREFIX \
+        --top-down -t 20 --progress > ${real_out}.vcf
 
-    if [ -f $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.500bp_95pct.csv ]; then
-        echo "Comparing SNVs to truth for $num_hap haplotypes"
-        ./compare_snvs.py \
-            --vcf ${real_out}.vcf \
-            --truth-csv $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.500bp_95pct.csv \
-            --relaxed-truth-csv $TRUTH_CSV_DIR/CHM13.0_${ORIG_PATH_NAME}.snvs.10bp_95pct.csv
-    else
-        echo "WARNING: Could not find truth CSV for $ORIG_PATH_NAME, skipping comparison"
-    fi
+    ./compare_alt_contig_snvs.py \
+        --vcf ${real_out}.vcf \
+        --segment-map ${BIG_GRAPH}.augref.segs.tsv \
+        --truth-dir $TRUTH_CSV_DIR \
+        --path-name $ORIG_PATH_NAME
 done
 
 ./guess_optimal_num_sampled_haplo.py $SAMPLE_NAME

@@ -24,7 +24,7 @@ from typing import Dict, Set # Type hints
 
 TSV_SUFFIX = 'snvs.10bp_95pct.csv'
 CHM13_NAME = 'CHM13.0'
-WIGGLE_ROOM = 10
+WIGGLE_ROOM = 5
 
 @dataclass
 class SNV:

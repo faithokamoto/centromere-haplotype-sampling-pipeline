@@ -21,10 +21,10 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=4:00:00
+#SBATCH --time=8:00:00
 #
 # Array job specification:
-#SBATCH --array=1-21
+#SBATCH --array=1-49
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
@@ -32,14 +32,12 @@ DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 source /private/home/${USER}/.bashrc
 source activate matplotlib
 
-line=`head -n $SLURM_ARRAY_TASK_ID $DIR/input_data/test_samples.txt | tail -n 1`
+line=`head -n $SLURM_ARRAY_TASK_ID $DIR/input_data/close_samples.txt | tail -n 1`
 path_name=$(echo "$line" | cut -f1 -d ",")
-version=$(echo "$line" | cut -f2 -d ",")
-haplotype=$(echo "$line" | cut -f3 -d ",")
-echo "Running path: $path_name, version: $version"
+echo "Running path: $path_name"
 
 log=$DIR/log/${path_name}.log
-$DIR/leave_one_out_alignments.sh "$path_name" "$version" &> $log
+$DIR/leave_one_out_alignments.sh $path_name &> $log
 $DIR/guess_cenhap.py --ploidy 1 --logfile $log &>> $log
 $DIR/plot_scripts/plot_identity_and_accuracy.py \
-    --name $haplotype --logfile $log --output-file $DIR/plot_outputs/${path_name}.png
+    --name ${path_name} --logfile $log --output-file $DIR/plot_outputs/${path_name}.png
