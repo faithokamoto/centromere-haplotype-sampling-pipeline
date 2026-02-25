@@ -181,7 +181,7 @@ do
         -k ${real_out}.augment.pack -s $SAMPLE_NAME --path-prefix $AUGREF_PREFIX \
         --top-down -t 20 --progress > ${real_out}.vcf
 
-    ./compare_alt_contig_snvs.py \
+    ./compare_snvs.py \
         --vcf ${real_out}.vcf \
         --segment-map ${BIG_GRAPH}.augref.segs.tsv \
         --truth-dir $TRUTH_CSV_DIR \
