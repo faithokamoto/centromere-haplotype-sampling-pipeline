@@ -24,7 +24,6 @@ from typing import Dict, Set # Type hints
 
 TSV_SUFFIX = 'snvs.10bp_95pct.csv'
 CHM13_NAME = 'CHM13.0'
-WIGGLE_ROOM = 5
 
 @dataclass
 class SNV:
@@ -68,6 +67,11 @@ def parse_args() -> argparse.Namespace:
         '--path-name',
         help='Name of path that calls are for.',
     )
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='Print verbose per-contig stats',
+    )
     return parser.parse_args()
 
 def load_truth_set(csv_file: str) -> Set[SNV]:
@@ -109,6 +113,10 @@ def load_vcf(vcf_file: str) -> Dict[str, Set[SNV]]:
     """
 
     call_set = dict()
+    chm13_snv_count = 0
+    chm13_sv_count = 9
+    alt_snv_count = 0
+    alt_sv_count = 0
     with open(vcf_file) as f:
         header = f.readline().strip()
         if header != '##fileformat=VCFv4.2':
@@ -124,22 +132,37 @@ def load_vcf(vcf_file: str) -> Dict[str, Set[SNV]]:
             # Convert to 0-based & get rid of dummy base
             ref_pos = int(parts[1]) - 2
             ref_base = parts[3]
-            alt_base = parts[4]
+            alts = parts[4].split(',')
             filtered = parts[6] != 'PASS'
 
             # Skip things that the VCF filtered out
             if filtered:
                 continue
-            # Skip anything that has more than one alt allele
-            if ',' in alt_base:
-                continue
-            # Skip SVs
-            if len(ref_base) != 1 or len(alt_base) != 1 or alt_base == '*':
+
+            alt_lens = [len(cur_alt) for cur_alt in alts]
+            is_sv = (len(ref_base) > 1 or max(alt_lens) > 1)
+            for cur_alt in alts:
+                if cur_alt == '*': is_sv = True
+            if is_sv:
+                if ref_contig == CHM13_NAME:
+                    chm13_sv_count += 1
+                else:
+                    alt_sv_count += 1
+            else:
+                if ref_contig == CHM13_NAME:
+                    chm13_snv_count += 1
+                else:
+                    alt_snv_count += 1
+
+            # Skip anything that isn't a biallelic SNV
+            if len(alt_lens) > 1 or is_sv:
                 continue
 
             if not ref_contig in call_set:
                 call_set[ref_contig] = set()
-            call_set[ref_contig].add(SNV(ref_pos, ref_base, alt_base))
+            call_set[ref_contig].add(SNV(ref_pos, ref_base, alts[0]))
+    print(f'{chm13_snv_count} SNVs and {chm13_sv_count} SVs on CHM13')
+    print(f'{alt_snv_count} SNVs and {alt_sv_count} SVs on alt contigs')
     return call_set
 
 def load_segment_map(tsv_file: str) -> Dict[str, AltContig]:
@@ -172,7 +195,7 @@ def report_stats(tp: int, fp: int) -> None:
 
 def compute_stats(segment_map: Dict[str, AltContig],
                   call_set: Dict[str, Set[SNV]], 
-                  truth_dir: str, path_name: str) -> None:
+                  truth_dir: str, path_name: str, verbose: bool) -> None:
     """Compute and print comparison stats.
 
     For each ref contig, pull the relevant truth sets and
@@ -195,13 +218,13 @@ def compute_stats(segment_map: Dict[str, AltContig],
             # Extract haplotype name from path name
             ref_name = ref_contig.source_path.split('#')[-1]
             offset = ref_contig.start_index
-            print(f'translated {cur_contig} to {ref_name}')
+            if verbose:
+                print(f'translated {cur_contig} to {ref_name}')
         
         truth_file = f'{truth_dir}/{ref_name}_{path_name}.{TSV_SUFFIX}'
         
         try:
             truth_set = load_truth_set(truth_file)
-            pos_indexed_truth = {snv.ref_pos: snv for snv in truth_set}
             
             cur_tp = 0
             cur_fp = 0
@@ -212,17 +235,10 @@ def compute_stats(segment_map: Dict[str, AltContig],
                     cur_tp += 1
                 else:
                     cur_fp += 1
-                    printed_call = False
-                    for pos in range(call.ref_pos - WIGGLE_ROOM, 
-                                     call.ref_pos + WIGGLE_ROOM + 1):
-                        if pos in pos_indexed_truth:
-                            if not printed_call:
-                                print(f'SNVs nearby {call}:')
-                                printed_call = True
-                            print('\t' + str(pos_indexed_truth[pos]))
 
-            print(f'Calls against {cur_contig}:')
-            report_stats(cur_tp, cur_fp)
+            if verbose:
+                print(f'Calls against {cur_contig}:')
+                report_stats(cur_tp, cur_fp)
 
             tp += cur_tp
             fp += cur_fp
@@ -231,8 +247,9 @@ def compute_stats(segment_map: Dict[str, AltContig],
                 alt_fp += cur_fp
 
         except FileNotFoundError:
-            print(f'{len(cur_calls)} calls against {ref_name}; no truth CSV')
-            print()
+            if verbose:
+                print(f'{len(cur_calls)} calls vs. {ref_name}; no truth CSV')
+                print()
 
     print('Overall:')
     report_stats(tp, fp)
@@ -243,4 +260,5 @@ if __name__ == '__main__':
     args = parse_args()
     call_set = load_vcf(args.vcf)
     segment_map = load_segment_map(args.segment_map)
-    compute_stats(segment_map, call_set, args.truth_dir, args.path_name)
+    compute_stats(segment_map, call_set, args.truth_dir, 
+                  args.path_name, args.verbose)
