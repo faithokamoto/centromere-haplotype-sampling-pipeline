@@ -5,8 +5,9 @@ undergone [haplotype sampling][HaplotypeSampling].
 
 ## Dependencies
 
-- [`vg`][vg]: currently version `v1.72.0` with a few modifications
-- [Python 3][Python]: currently using `v3.14.1`
+- [`vg`][vg]: currently version v`1.72.0` with a few modifications
+- [Python 3][Python]: currently using v`3.14.1`
+- [Matplotlib][matplotlib]: currently using v`3.10.8`
 
 ## Background
 
@@ -30,12 +31,7 @@ the very longness that makes them valuable. However, we can simplify the graph.
 Haplotype sampling entails selecting a personalized set of *n* haplotypes which
 best match the input read set's *k*-mers. The full reference graph is then
 subset to only those haplotype paths. This dramatically decreases the number of
-seed hits and thus makes read alignment possible.
-
-I currently have a manual method to select *n* from 1-8 by looking at some
-output plots. However, this is time-consuming and relies on human judgement. In
-this repository I will attempt to develop an heuristic algorithm which selects
-an optimal *n* by leveraging the intuition I have developed from my ad hoc work.
+hits and thus makes read alignment possible. Selection of *n* is non-trivial.
 
 ## Workflow
 
@@ -60,10 +56,13 @@ in the second column. It also tries to type the cenhap (this is bad).
     - `add_dummy_caps.py`: modify Centrolign GFAs to input to haplotype sampling
     - `align_reads_giraffe.sh`: align reads against a graph via `vg giraffe`
     - `align_reads_minimap2.sh`: align reads against a linear ref via `minimap2`
+    - `compare_snvs.py`: compare SNV calls to truth sets
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
     - `guess_cenhap.py`: guess the cenhap of an input haplotype
     - `guess_optimal_num_sampled_haplo.py`: guess optimal *n* value
     - `leave_one_out_alignments.sh`: run the leave-one-out alignments
+    - `leave_one_out_alignments_diploid.sh`: similar run for diploid samples
+    - `sample_for_cenhap_guess.sh`: do cenhap guessing sans read alignment
 - **Plotting** (in `plot_scripts/`)
     - `plot_avg_identity.py`: plot average alignment identity across conditions
     - `plot_identity_and_accuracy.py`: plot ID % and SNV calling across *n*s
@@ -75,7 +74,7 @@ in the second column. It also tries to type the cenhap (this is bad).
 
 ## vg modifications
 
-I insert these lines right after [haplotype selection](https://github.com/vgteam/vg/blob/2e664f07e49caca29a208b3b0f2f25c7100df5e9/src/recombinator.cpp#L2056-L2058).
+I insert these lines right after [haplotype selection][SelectionCode].
 
 ```c++
 for (size_t i = 0; i < selected_haplotypes.size(); i++) {
@@ -87,13 +86,10 @@ for (size_t i = 0; i < selected_haplotypes.size(); i++) {
 }
 ```
 
-## TODO
-
-- [ ] call variants relative to better haplotypes
-
 [Centrolign]: https://github.com/jeizenga/centrolign
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling
 [LRgiraffe]: https://doi.org/10.1101/2025.09.29.678807
 [matplotlib]: https://matplotlib.org/
 [Python]: https://www.python.org/downloads
+[SelectionCode]: https://github.com/vgteam/vg/blob/2e664f07e49caca29a208b3b0f2f25c7100df5e9/src/recombinator.cpp#L2056-L2058
 [vg]: https://github.com/vgteam/vg
