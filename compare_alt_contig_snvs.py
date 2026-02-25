@@ -110,8 +110,9 @@ def load_vcf(vcf_file: str) -> Dict[str, Set[SNV]]:
 
     call_set = dict()
     with open(vcf_file) as f:
-        if f.readline().strip() != '##fileformat=VCFv4.2':
-            raise ValueError(f'Wrong VCF version: not 4.2 but\n{line}')
+        header = f.readline().strip()
+        if header != '##fileformat=VCFv4.2':
+            raise ValueError(f'Wrong VCF version: not 4.2. Header\n{header}')
         
         for line in f:
             # Skip header lines
@@ -162,7 +163,8 @@ def load_segment_map(tsv_file: str) -> Dict[str, AltContig]:
 
 def report_stats(tp: int, fp: int) -> None:
     """Print TP, FP, and precision stats"""
-    precision = tp / (tp + fp)
+    total = tp + fp
+    precision = 0 if total == 0 else tp / total
     print(f'True Positives (TP): {tp}')
     print(f'False Positives (FP): {fp}')
     print(f'Precision: {precision:.4f}')

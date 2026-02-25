@@ -12,8 +12,8 @@ PATH_NAME="${SAMPLE_ID}#${HAPLO_NUM}#${ORIG_PATH_NAME}#0"
 
 BED_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/extract_hors_HPRC/release2/contiguous_HORs_bed_files
 
-if ls "${BED_DIR}/${SAMPLE_ID}_hap1_*" &>/dev/null
-then
+ls ${BED_DIR}/${SAMPLE_ID}_hap1_* &>/dev/null
+if [ $? -eq 0 ]; then
     if [ "$HAPLO_NUM" -eq "1" ]; then
         SAMPLE_NAME=${SAMPLE_ID}_hap1
     else
@@ -62,13 +62,23 @@ if [ ! -f ${REAL_READS}.fastq ]; then
         echo "ERROR: Could not find reads for $SAMPLE_NAME"
         exit 1
     fi
-    grep chr12 ${BED_DIR}/${SAMPLE_NAME}_${BED_SUFFIX} > ${REAL_READS}.bed
+    grep chr12 ${BED_DIR}/${SAMPLE_NAME}_* > ${REAL_READS}.bed
     # Convert to FASTQ
     samtools view -@32 -L ${REAL_READS}.bed $PROJ_DIR/to_align/${SAMPLE_NAME}.bam | \
         awk '{print "@" $1 "\n" $10 "\n+\n" $11}' > ${REAL_READS}.fastq
 
     # Clean up memory
-    rm $PROJ_DIR/to_align/${SAMPLE_NAME}.bam
+    rm -f $PROJ_DIR/to_align/${SAMPLE_NAME}.bam
+fi
+
+if [ ! -f ${REAL_READS}.fastq ]; then
+    echo "Failed to create a FASTQ file"
+    exit 1
+fi
+
+if [ ! -s ${REAL_READS}.fastq ]; then
+    echo "FASTQ file is empty"
+    exit 1
 fi
 
 # ---- align to own haplotype ----
@@ -78,7 +88,7 @@ vg paths --paths-by $PATH_NAME --extract-fasta -x $BIG_GRAPH.gbz > ${OWN_HAP_GRA
 # Avoid auto-conversion of name
 sed "s/${PATH_NAME}/${ORIG_PATH_NAME}/" -i ${OWN_HAP_GRAPH}.fasta
 # Avoid reusing an old index
-rm ${OWN_HAP_GRAPH}.fasta.fai
+rm -f ${OWN_HAP_GRAPH}.fasta.fai
 # Convert to GBZ
 vg construct --reference ${OWN_HAP_GRAPH}.fasta -m 1024 > ${OWN_HAP_GRAPH}.vg
 vg gbwt --index-paths -x ${OWN_HAP_GRAPH}.vg -o ${OWN_HAP_GRAPH}.gbwt
@@ -149,7 +159,7 @@ do
     vg haplotypes -t 1 -k $KMER_DIR/real_${SAMPLE_NAME}.kff -i ${BIG_GRAPH}.hapl \
         --num-haplotypes $num_hap --haploid-scoring -d ${BIG_GRAPH}.dist \
         -g ${real_graph}.augref.gbz --ban-sample $SAMPLE_ID \
-        --set-reference $AUGREF_PREFIX --include-reference ${BIG_GRAPH}.gbz
+        --set-reference $AUGREF_PREFIX --include-reference ${BIG_GRAPH}.gbz 2> /dev/null
     vg convert ${real_graph}.augref.gbz -p > ${real_graph}.augref.pg
 
     # Same thing but without augref paths for read alignment
