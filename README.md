@@ -67,6 +67,7 @@ in the second column. It also tries to type the cenhap (this is bad).
     - `plot_avg_identity.py`: plot average alignment identity across conditions
     - `plot_identity_and_accuracy.py`: plot ID % and SNV calling across *n*s
     - `plot_neighbor_finding.py`: attempts to visualize how good neighbors are
+    - `plot_variants_vs_dist.py`: four-panel plot for a sample with variant info
 - **Metadata**
     - `.gitignore`: some files that I don't feel like putting on version control
     - `LICENSE`: the MIT license as it applies to this repository
