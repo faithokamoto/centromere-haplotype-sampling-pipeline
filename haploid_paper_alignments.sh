@@ -113,7 +113,7 @@ minimap2 -x lr:hqae -d ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.fasta
 
 # ---- align to CHM13 ----
 
-./helper_scripts/align_reads_minimap2.sh map-hifi ${CHM13_GRAPH}.mmi 
+./helper_scripts/align_reads_minimap2.sh map-hifi ${CHM13_GRAPH}.mmi \
     ${CHM13_GRAPH}.gbz ${REAL_READS}.fastq ${CHM13_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${CHM13_GRAPH}.gbz \
     ${REAL_READS}.fastq ${CHM13_ALN}.real.giraffe

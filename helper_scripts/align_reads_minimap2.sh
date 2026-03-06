@@ -1,7 +1,7 @@
 #!/bin/bash
 # Align reads using minimap2 and get mapping statistics
 # Usage: align_reads_minimap2.sh <preset> <index.mmi> <graph.gbz> <reads.fastq> <output prefix>
-# Example: align_reads_minimap2.sh lr:hqae \
+# Example: align_reads_minimap2.sh map-hifi \
 #                                  linear_ref_chr12_asat/chm13.chr12asat.mmi \
 #                                  linear_ref_chr12_asat/chm13.chr12asat.giraffe.gbz
 #                                  HG00408_pat_and_HG00099_hap1_chr12_hor_array.hifi.fastq \
@@ -13,12 +13,12 @@ GRAPH=$3
 READS=$4
 OUT=$5
 
-minimap2 -ax $PRESET -t 20 $INDEX $READS > $OUT.sam 2> $OUT.log
+minimap2 -ax "$PRESET" -t 20 "$INDEX" "$READS" > $OUT.sam 2> $OUT.log
 # Filter out secondary/supplementary alignments before converting to BAM
 samtools view -b -F 256 -F 2048 $OUT.sam > $OUT.bam
 
 # Pull vg's identity statistic
-vg inject -x $GRAPH --add-identity $OUT.bam > $OUT.gam
+vg inject -x "$GRAPH" --add-identity $OUT.bam > $OUT.gam
 vg filter --tsv-out "name;identity" $OUT.gam > $OUT.tsv
 # Irrelevant now since we have the GAM
 rm $OUT.sam $OUT.bam
