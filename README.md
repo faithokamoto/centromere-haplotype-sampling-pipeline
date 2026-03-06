@@ -6,8 +6,12 @@ undergone [haplotype sampling][HaplotypeSampling].
 ## Dependencies
 
 - [`vg`][vg]: currently version v`1.72.0` with a few modifications
-- [Python 3][Python]: currently using v`3.14.1`
-- [Matplotlib][matplotlib]: currently using v`3.10.8`
+
+Then do
+```bash
+conda create -n cenhap-sample -c conda-forge -c bioconda \
+    kmc matplotlib minimap2 samtools
+```
 
 ## Background
 
@@ -58,11 +62,9 @@ in the second column. It also tries to type the cenhap (this is bad).
     - `align_reads_minimap2.sh`: align reads against a linear ref via `minimap2`
     - `compare_snvs.py`: compare SNV calls to truth sets
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
-    - `guess_cenhap.py`: guess the cenhap of an input haplotype
-    - `guess_optimal_num_sampled_haplo.py`: guess optimal *n* value
+    - `guess_n_and_cenhap.py`: guess optimal *n* value and cenhap of input
     - `leave_one_out_alignments.sh`: run the leave-one-out alignments
     - `leave_one_out_alignments_diploid.sh`: similar run for diploid samples
-    - `sample_for_cenhap_guess.sh`: do cenhap guessing sans read alignment
 - **Plotting** (in `plot_scripts/`)
     - `plot_avg_identity.py`: plot average alignment identity across conditions
     - `plot_identity_and_accuracy.py`: plot ID % and SNV calling across *n*s

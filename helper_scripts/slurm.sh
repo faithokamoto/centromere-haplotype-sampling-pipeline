@@ -24,21 +24,17 @@
 #SBATCH --time=8:00:00
 #
 # Array job specification:
-#SBATCH --array=1-49
+#SBATCH --array=1-50
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
 # Activate Conda environment
 source /private/home/${USER}/.bashrc
-source activate matplotlib
+source activate cenhap-sample
 
-line=`head -n $SLURM_ARRAY_TASK_ID $DIR/input_data/close_samples.txt | tail -n 1`
-path_name=$(echo "$line" | cut -f1 -d ",")
+GFA=/private/groups/patenlab/fokamoto/centrolign/graph/unsampled/chr12.gfa
+path_name=`grep "^P" "$GFA" | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -f2 | cut -d "#" -f3`
 echo "Running path: $path_name"
 
 log=$DIR/log/${path_name}.log
-$DIR/leave_one_out_alignments.sh $path_name &> $log
-$DIR/guess_cenhap.py --ploidy 1 --logfile $log &>> $log
-$DIR/plot_scripts/plot_identity_and_accuracy.py \
-    --name ${path_name} --logfile $log \
-    --output-file $DIR/plot_outputs/${path_name}.png
+$DIR/haploid_paper_alignments.sh $path_name &> $log
