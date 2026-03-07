@@ -38,43 +38,43 @@ BIG_GRAPH=$PROJ_DIR/graph/unsampled/chr12
 DISTS=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/all_pairs/distance_matrices/chr12_r2_QC_v2_centrolign_pairwise_distance.csv
 CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/notes/correct_cenhaps_chr12/chr12_cenhap_assignments_final.csv
 
+REAL_READS=$PROJ_DIR/to_align/real_${ORIG_PATH_NAME}.chr12.hifi
+
 GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
 KMER_DIR=$PROJ_DIR/to_align/kmers
 
 CHM13_GRAPH=$GRAPH_DIR/chm13.chr12asat
-OWN_HAP_GRAPH=$GRAPH_DIR/$SAMPLE_NAME
-NEIGHBOR_GRAPH=$GRAPH_DIR/${SAMPLE_NAME}.neighbor
-SAMPLED_GRAPH=$GRAPH_DIR/${SAMPLE_NAME}.sampled
+OWN_HAP_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.own_hap
+NEIGHBOR_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.neighbor
+SAMPLED_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.sampled
 
-REAL_READS=$PROJ_DIR/to_align/real_${SAMPLE_NAME}_chr12_hor_array.hifi
+OWN_HAP_ALN=$ALN_DIR/${ORIG_PATH_NAME}.own_hap
+NEIGHBOR_ALN=$ALN_DIR/${ORIG_PATH_NAME}.neighbor
+CHM13_ALN=$ALN_DIR/${ORIG_PATH_NAME}.chm13
+SAMPLED_ALN=$ALN_DIR/${ORIG_PATH_NAME}.sampled
 
-OWN_HAP_ALN=$ALN_DIR/${SAMPLE_NAME}.own_hap
-NEIGHBOR_ALN=$ALN_DIR/${SAMPLE_NAME}.neighbor
-CHM13_ALN=$ALN_DIR/${SAMPLE_NAME}.chm13
-SAMPLED_ALN=$ALN_DIR/${SAMPLE_NAME}.sampled
-
-GUESS_LOG=$GRAPH_DIR/${SAMPLE_NAME}.guess.log
+GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.guess.log
 
 # ---- get reads to align ----
 
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
-    echo "Downloading reads for $SAMPLE_NAME from AWS:"
+    echo "Downloading reads for $ORIG_PATH_NAME from AWS:"
     reads=`grep "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | cut -f3 -d ","` 
     echo "$reads"
-    aws s3 --no-sign-request cp $reads $PROJ_DIR/to_align/${SAMPLE_NAME}.bam &> /dev/null
-    if [ ! -f "$PROJ_DIR/to_align/${SAMPLE_NAME}.bam" ]; then
-        echo "ERROR: Could not find reads for $SAMPLE_NAME"
+    aws s3 --no-sign-request cp $reads $PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam &> /dev/null
+    if [ ! -f "$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam" ]; then
+        echo "ERROR: Could not find reads for $ORIG_PATH_NAME"
         exit 1
     fi
     grep chr12 ${BED_DIR}/${SAMPLE_NAME}_* > ${REAL_READS}.bed
     # Convert to FASTQ
-    samtools view -@32 -L ${REAL_READS}.bed $PROJ_DIR/to_align/${SAMPLE_NAME}.bam | \
+    samtools view -@32 -L ${REAL_READS}.bed $PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam | \
         awk '{print "@" $1 "\n" $10 "\n+\n" $11}' > ${REAL_READS}.fastq
 
     # Clean up memory
-    rm -f $PROJ_DIR/to_align/${SAMPLE_NAME}.bam
+    rm -f $PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
 fi
 
 if [ ! -f ${REAL_READS}.fastq ]; then
@@ -153,12 +153,12 @@ minimap2 -x lr:hqae -d ${NEIGHBOR_GRAPH}.mmi ${NEIGHBOR_GRAPH}.fasta
 # ---- align to to haplotype-sampled graphs ----
 
 kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
-    $KMER_DIR/real_${SAMPLE_NAME} $KMER_DIR > $KMER_DIR/real_${SAMPLE_NAME}.kff.log
+    $KMER_DIR/${ORIG_PATH_NAME}.real $KMER_DIR > $KMER_DIR/${ORIG_PATH_NAME}.real.kff.log
 
 # Sample 10 haps without alignment, so we can guess ideal # to sample
-vg haplotypes -k $KMER_DIR/real_${SAMPLE_NAME}.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist \
-    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> $GRAPH_DIR/${SAMPLE_NAME}.guess.log
+    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> "$GUESS_LOG"
 
 # Use logfile to guess
 ./guess_n_and_cenhap.py --ploidy 1 --cenhap-table "$CENHAP_TABLE" "$GUESS_LOG" &>> "$GUESS_LOG"
@@ -166,7 +166,7 @@ cat "$GUESS_LOG"
 
 n_to_sample=`fgrep Best "$GUESS_LOG" | cut -d " " -f4`
 
-vg haplotypes -k $KMER_DIR/real_${SAMPLE_NAME}.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
 vg autoindex --prefix "$SAMPLED_GRAPH" --no-guessing --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.gbz
