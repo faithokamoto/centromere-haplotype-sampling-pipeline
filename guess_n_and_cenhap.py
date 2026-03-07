@@ -86,6 +86,8 @@ def guess_optimal_n(sampled: List[SampledHaplotype], fall_threshold: int,
             # We're not falling fast enough (hit plateau)
             return i
         
+        prev_score = cur_score
+        
     # Guess we're using all of these
     return len(sampled)
 
