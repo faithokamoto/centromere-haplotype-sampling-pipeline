@@ -58,25 +58,62 @@ SAMPLED_ALN=$ALN_DIR/${ORIG_PATH_NAME}.sampled
 
 GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.guess.log
 
+# ---- make extra references ----
+
+# native ref
+./helper_scripts/create_single_path_ref.sh ${BIG_GRAPH}.pg "$PATH_NAME" "$OWN_HAP_GRAPH"
+
+# Nearest neighbor
+nearest_neighbor=`grep "$ORIG_PATH_NAME" "$DISTS" | sed 's/,/\t/g' | sort -k3 -n | head -1 \
+    | cut -f1-2 | tr "\t" "\n" | grep -v "$ORIG_PATH_NAME"`
+neighbor_sample_id=`echo $nearest_neighbor | cut -f1 -d "."`
+neighbor_haplo_num=`echo $nearest_neighbor | cut -f2 -d "."`
+neighbor_path_name="${neighbor_sample_id}#${neighbor_haplo_num}#${nearest_neighbor}#0"
+echo "Nearest neighbor: $neighbor_path_name"
+
+./helper_scripts/create_single_path_ref.sh ${BIG_GRAPH}.pg "$neighbor_path_name" "$NEIGHBOR_GRAPH"
+
 # ---- get reads to align ----
 
+rm ${REAL_READS}.fastq
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
     echo "Downloading reads for $ORIG_PATH_NAME from AWS:"
     reads=`grep "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | cut -f3 -d ","` 
-    echo "$reads"
-    aws s3 --no-sign-request cp $reads $PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam &> /dev/null
-    if [ ! -f "$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam" ]; then
+    full_bam=$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
+    aws s3 --no-sign-request cp $reads $full_bam &> /dev/null
+    if [ ! -f "$full_bam" ]; then
         echo "ERROR: Could not find reads for $ORIG_PATH_NAME"
         exit 1
     fi
+    # Subset BAM to only chr12 reads
     grep chr12 ${BED_DIR}/${SAMPLE_NAME}_* > ${REAL_READS}.bed
-    # Convert to FASTQ
-    samtools view -@32 -L ${REAL_READS}.bed $PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam | \
-        awk '{print "@" $1 "\n" $10 "\n+\n" $11}' > ${REAL_READS}.fastq
+    samtools view -@32 -L ${REAL_READS}.bed -h $full_bam > ${REAL_READS}.sam
 
-    # Clean up memory
-    rm -f $PROJ_DIR/to_align/${ORIG_PATH_NAME}*.bam
+    # Edit SAM to something compatible with the graph
+    old_path_name=`cut -f1 ${REAL_READS}.bed`
+    start=`cut -f2 ${REAL_READS}.bed`
+    end=`cut -f3 ${REAL_READS}.bed`
+    new_path_name=`echo $PATH_NAME | sed 's/#0//g'`
+    samtools view ${REAL_READS}.sam > ${REAL_READS}.no_header.sam
+    samtools view -H ${REAL_READS}.sam | sed "s/$old_path_name/$new_path_name/"> ${REAL_READS}.header
+    # Filter for reads which appear within the BED file's boundaries
+    # while also editing the coordinates to be graph-friendly
+    awk -v contig="$new_path_name" -v start="$start" -v end="$end" \
+        '{if (($4 - start + 1 >= 0) && ($4 + length($10) <= end)) 
+            {print $1, $2, contig, $4 - start + 1, $5, $6, $7, $8, $9, $10, $11}}' \
+        ${REAL_READS}.no_header.sam | tr " " "\t" > ${REAL_READS}.edited.sam
+    cat ${REAL_READS}.header ${REAL_READS}.edited.sam > ${REAL_READS}.combined.sam
+    
+    # Get truth positions
+    vg inject -x ${OWN_HAP_GRAPH}.gbz ${REAL_READS}.combined.sam > ${REAL_READS}.gam
+    vg filter --tsv-out "name;nodes" ${REAL_READS}.gam > ${REAL_READS}.tsv
+    # Convert to FASTQ
+    vg view --fastq-out ${REAL_READS}.gam > ${REAL_READS}.fastq
+
+    # Clean up memory; we only need FASTQ files & the nodes TSV
+    rm -f $full_bam ${REAL_READS}.bed ${REAL_READS}.sam ${REAL_READS}.no_header.sam
+    rm -f ${REAL_READS}.header ${REAL_READS}.edited.sam ${REAL_READS}.combined.sam
 fi
 
 if [ ! -f ${REAL_READS}.fastq ]; then
@@ -89,64 +126,21 @@ if [ ! -s ${REAL_READS}.fastq ]; then
     exit 1
 fi
 
-# ---- align to own haplotype ----
+# ---- basic alignments ----
 
-# Align to own haplotype
-vg mod --keep-path "$PATH_NAME" ${BIG_GRAPH}.pg > ${OWN_HAP_GRAPH}.vg
-# Convert to GBZ
-vg gbwt --index-paths -x ${OWN_HAP_GRAPH}.vg -o ${OWN_HAP_GRAPH}.no_ref.gbwt
-vg gbwt -o ${OWN_HAP_GRAPH}.with_ref.gbwt --set-reference "$SAMPLE_ID" ${OWN_HAP_GRAPH}.no_ref.gbwt
-vg gbwt --gbz-format -x ${OWN_HAP_GRAPH}.vg ${OWN_HAP_GRAPH}.with_ref.gbwt -g ${OWN_HAP_GRAPH}.gbz
-# Now that we have the GBZ we don't need these other things
-rm ${OWN_HAP_GRAPH}.no_ref.gbwt ${OWN_HAP_GRAPH}.with_ref.gbwt ${OWN_HAP_GRAPH}.vg
-# Index
-vg autoindex --gbz ${OWN_HAP_GRAPH}.gbz -w lr-giraffe --prefix "$OWN_HAP_GRAPH" --no-guessing
-
-# Minimap2 needs FASTA input
-vg paths --extract-fasta -x ${OWN_HAP_GRAPH}.gbz > ${OWN_HAP_GRAPH}.fasta
-# Avoid reusing an old index
-rm -f "${OWN_HAP_GRAPH}.fasta.fai"
-minimap2 -x lr:hqae -d ${OWN_HAP_GRAPH}.mmi ${OWN_HAP_GRAPH}.fasta
-
+# align to own haplotype
 ./helper_scripts/align_reads_minimap2.sh lr:hqae ${OWN_HAP_GRAPH}.mmi \
     ${OWN_HAP_GRAPH}.gbz ${REAL_READS}.fastq ${OWN_HAP_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${OWN_HAP_GRAPH}.gbz \
     ${REAL_READS}.fastq ${OWN_HAP_ALN}.real.giraffe
 
-# ---- align to CHM13 ----
-
+# align to CHM13
 ./helper_scripts/align_reads_minimap2.sh map-hifi ${CHM13_GRAPH}.mmi \
     ${CHM13_GRAPH}.gbz ${REAL_READS}.fastq ${CHM13_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${CHM13_GRAPH}.gbz \
     ${REAL_READS}.fastq ${CHM13_ALN}.real.giraffe
 
-# ---- align to nearest neighbor ----
-
-# Get nearest neighbor
-nearest_neighbor=`grep "$ORIG_PATH_NAME" "$DISTS" | sed 's/,/\t/g' | sort -k3 -n | head -1 \
-    | cut -f1-2 | tr "\t" "\n" | grep -v "$ORIG_PATH_NAME"`
-neighbor_sample_id=`echo $nearest_neighbor | cut -f1 -d "."`
-neighbor_haplo_num=`echo $nearest_neighbor | cut -f2 -d "."`
-neighbor_path_name="${neighbor_sample_id}#${neighbor_haplo_num}#${nearest_neighbor}#0"
-
-echo "Aligning to nearest neighbor: $neighbor_path_name"
-
-vg mod --keep-path "$neighbor_path_name" ${BIG_GRAPH}.pg > ${NEIGHBOR_GRAPH}.vg
-# Convert to GBZ
-vg gbwt --index-paths -x ${NEIGHBOR_GRAPH}.vg -o ${NEIGHBOR_GRAPH}.no_ref.gbwt
-vg gbwt -o ${NEIGHBOR_GRAPH}.with_ref.gbwt --set-reference "$neighbor_sample_id" ${NEIGHBOR_GRAPH}.no_ref.gbwt
-vg gbwt --gbz-format -x ${NEIGHBOR_GRAPH}.vg ${NEIGHBOR_GRAPH}.with_ref.gbwt -g ${NEIGHBOR_GRAPH}.gbz
-# Now that we have the GBZ we don't need these other things
-rm ${NEIGHBOR_GRAPH}.no_ref.gbwt ${NEIGHBOR_GRAPH}.with_ref.gbwt ${NEIGHBOR_GRAPH}.vg
-# Index
-vg autoindex --gbz ${NEIGHBOR_GRAPH}.gbz -w lr-giraffe --prefix "$NEIGHBOR_GRAPH" --no-guessing
-
-# Minimap2 needs FASTA input
-vg paths --extract-fasta -x ${NEIGHBOR_GRAPH}.gbz > ${NEIGHBOR_GRAPH}.fasta
-# Avoid reusing an old index
-rm -f "${NEIGHBOR_GRAPH}.fasta.fai"
-minimap2 -x map-hifi -d ${NEIGHBOR_GRAPH}.mmi ${NEIGHBOR_GRAPH}.fasta
-
+# align to nearest neighbor
 ./helper_scripts/align_reads_minimap2.sh map-hifi ${NEIGHBOR_GRAPH}.mmi \
     ${NEIGHBOR_GRAPH}.gbz ${REAL_READS}.fastq ${NEIGHBOR_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${NEIGHBOR_GRAPH}.gbz \
