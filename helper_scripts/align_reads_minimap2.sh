@@ -19,6 +19,6 @@ samtools view -b -F 256 -F 2048 $OUT.sam > $OUT.bam
 
 # Pull vg's identity statistic
 vg inject -x "$GRAPH" --add-identity $OUT.bam > $OUT.gam
-vg filter --tsv-out "name;identity" $OUT.gam > $OUT.tsv
+vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
 # Irrelevant now since we have the GAM
 rm $OUT.sam $OUT.bam

@@ -10,7 +10,7 @@ undergone [haplotype sampling][HaplotypeSampling].
 Then do
 ```bash
 conda create -n cenhap-sample -c conda-forge -c bioconda \
-    kmc matplotlib minimap2 samtools
+    kmc matplotlib minimap2 samtools pandas
 ```
 
 ## Background
@@ -92,7 +92,5 @@ for (size_t i = 0; i < selected_haplotypes.size(); i++) {
 [Centrolign]: https://github.com/jeizenga/centrolign
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling
 [LRgiraffe]: https://doi.org/10.1101/2025.09.29.678807
-[matplotlib]: https://matplotlib.org/
-[Python]: https://www.python.org/downloads
 [SelectionCode]: https://github.com/vgteam/vg/blob/2e664f07e49caca29a208b3b0f2f25c7100df5e9/src/recombinator.cpp#L2056-L2058
 [vg]: https://github.com/vgteam/vg

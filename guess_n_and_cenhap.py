@@ -74,15 +74,20 @@ def guess_optimal_n(sampled: List[SampledHaplotype], fall_threshold: int,
 
     max_score = sampled[0].score
     prev_score = sampled[0].score
+
+    left_first_plateau = False
     
     for i in range(1, len(sampled)):
         cur_score = sampled[i].score
+
+        if cur_score <= prev_score - plateau_threshold:
+            left_first_plateau = True
 
         # Check if we should stop here (= use prev i haps)
         if cur_score < max_score - fall_threshold:
             # We've fallen too far
             return i
-        elif cur_score > prev_score - plateau_threshold:
+        elif left_first_plateau and cur_score > prev_score - plateau_threshold:
             # We're not falling fast enough (hit plateau)
             return i
         

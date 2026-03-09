@@ -7,6 +7,8 @@ set -e
 
 # ---- process arguments ----
 
+echo "Top of haploid_paper_alignments.sh with ${1} input"
+
 ORIG_PATH_NAME=$1
 SAMPLE_ID=`echo "$ORIG_PATH_NAME" | cut -f1 -d "." `
 HAPLO_NUM=`echo "$ORIG_PATH_NAME" | cut -f2 -d "." `
@@ -74,7 +76,7 @@ if [ ! -f ${REAL_READS}.fastq ]; then
         awk '{print "@" $1 "\n" $10 "\n+\n" $11}' > ${REAL_READS}.fastq
 
     # Clean up memory
-    rm -f $PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
+    rm -f $PROJ_DIR/to_align/${ORIG_PATH_NAME}*.bam
 fi
 
 if [ ! -f ${REAL_READS}.fastq ]; then
@@ -143,7 +145,7 @@ vg autoindex --gbz ${NEIGHBOR_GRAPH}.gbz -w lr-giraffe --prefix "$NEIGHBOR_GRAPH
 vg paths --extract-fasta -x ${NEIGHBOR_GRAPH}.gbz > ${NEIGHBOR_GRAPH}.fasta
 # Avoid reusing an old index
 rm -f "${NEIGHBOR_GRAPH}.fasta.fai"
-minimap2 -x lr:hqae -d ${NEIGHBOR_GRAPH}.mmi ${NEIGHBOR_GRAPH}.fasta
+minimap2 -x map-hifi -d ${NEIGHBOR_GRAPH}.mmi ${NEIGHBOR_GRAPH}.fasta
 
 ./helper_scripts/align_reads_minimap2.sh map-hifi ${NEIGHBOR_GRAPH}.mmi \
     ${NEIGHBOR_GRAPH}.gbz ${REAL_READS}.fastq ${NEIGHBOR_ALN}.real.minimap2
@@ -152,9 +154,14 @@ minimap2 -x lr:hqae -d ${NEIGHBOR_GRAPH}.mmi ${NEIGHBOR_GRAPH}.fasta
 
 # ---- align to to haplotype-sampled graphs ----
 
+echo "kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
+    $KMER_DIR/${ORIG_PATH_NAME}.real $KMER_DIR"
 kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
-    $KMER_DIR/${ORIG_PATH_NAME}.real $KMER_DIR > $KMER_DIR/${ORIG_PATH_NAME}.real.kff.log
+    $KMER_DIR/${ORIG_PATH_NAME}.real "$KMER_DIR"
 
+echo "vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
+    --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist \
+    -g /dev/null --ban-sample $SAMPLE_ID ${BIG_GRAPH}.gbz 2> $GUESS_LOG"
 # Sample 10 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist \
