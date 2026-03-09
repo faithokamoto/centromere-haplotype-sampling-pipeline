@@ -3,8 +3,6 @@
 # Usage: haploid_paper_alignments.sh <original path name>
 # Example: haploid_paper_alignments.sh HG00099.1
 
-set -e
-
 # ---- process arguments ----
 
 echo "Top of haploid_paper_alignments.sh with ${1} input"
@@ -16,17 +14,29 @@ PATH_NAME="${SAMPLE_ID}#${HAPLO_NUM}#${ORIG_PATH_NAME}#0"
 
 BED_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/extract_hors_HPRC/release2/contiguous_HORs_bed_files
 
+ls ${BED_DIR}/${SAMPLE_ID}_* &>/dev/null
+if [ $? -eq 1 ]; then
+    echo "No BED files available for $SAMPLE_ID"
+    exit 1
+fi
+
 ls ${BED_DIR}/${SAMPLE_ID}_hap1_* &>/dev/null
 if [ $? -eq 0 ]; then
+    echo "option 1"
     if [ "$HAPLO_NUM" -eq "1" ]; then
+        echo "hap1"
         SAMPLE_NAME=${SAMPLE_ID}_hap1
     else
+        echo "hap2"
         SAMPLE_NAME=${SAMPLE_ID}_hap2
     fi
 else
+    echo "option 2"
     if [ "$HAPLO_NUM" -eq "1" ]; then
+        echo "pat"
         SAMPLE_NAME=${SAMPLE_ID}_pat
     else
+        echo "mat"
         SAMPLE_NAME=${SAMPLE_ID}_mat
     fi
 fi
@@ -34,6 +44,8 @@ fi
 echo "Processing sample: $SAMPLE_NAME"
 
 # ---- set up variables ----
+
+set -e
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/chr12
@@ -75,7 +87,7 @@ echo "Nearest neighbor: $neighbor_path_name"
 
 # ---- get reads to align ----
 
-rm ${REAL_READS}.fastq
+rm -f ${REAL_READS}.fastq
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
     echo "Downloading reads for $ORIG_PATH_NAME from AWS:"
