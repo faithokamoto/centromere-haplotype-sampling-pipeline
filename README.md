@@ -58,8 +58,6 @@ in the second column. It also tries to type the cenhap (this is bad).
 
 - **Workflow**
     - `add_dummy_caps.py`: modify Centrolign GFAs to input to haplotype sampling
-    - `align_reads_giraffe.sh`: align reads against a graph via `vg giraffe`
-    - `align_reads_minimap2.sh`: align reads against a linear ref via `minimap2`
     - `compare_snvs.py`: compare SNV calls to truth sets
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
     - `guess_n_and_cenhap.py`: guess optimal *n* value and cenhap of input
