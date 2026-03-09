@@ -67,6 +67,7 @@ in the second column. It also tries to type the cenhap (this is bad).
     - `leave_one_out_alignments_diploid.sh`: similar run for diploid samples
 - **Plotting** (in `plot_scripts/`)
     - `plot_avg_identity.py`: plot average alignment identity across conditions
+    - `plot_heatmap.py`: plot chr12 cenhap typing accuracy heatmap
     - `plot_identity_and_accuracy.py`: plot ID % and SNV calling across *n*s
     - `plot_neighbor_finding.py`: attempts to visualize how good neighbors are
     - `plot_variants_vs_dist.py`: four-panel plot for a sample with variant info
