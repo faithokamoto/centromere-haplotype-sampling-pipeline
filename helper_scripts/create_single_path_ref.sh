@@ -7,7 +7,7 @@ BIG_GRAPH=$1
 PATH_NAME=$2
 OUT=$3
 
-SAMPLE_ID=`echo "$PATH_NAME" | cut -f1 -d "." `
+SAMPLE_ID=`echo "$PATH_NAME" | cut -f1 -d "#" `
 
 vg mod --keep-path "$PATH_NAME" "$BIG_GRAPH" > ${OUT}.vg
 # Convert to GBZ
@@ -22,4 +22,4 @@ vg autoindex --gbz ${OUT}.gbz -w lr-giraffe --prefix "$OUT" --no-guessing
 vg paths --extract-fasta -x ${OUT}.gbz > ${OUT}.fasta
 # Avoid reusing an old index
 rm -f "${OUT}.fasta.fai"
-minimap2 -x lr:hqae -d ${OUT}.mmi ${OUT}.fasta
+minimap2 -x map-hifi -d ${OUT}.mmi ${OUT}.fasta
