@@ -20,3 +20,5 @@ vg inject -x "$GRAPH" --add-identity $OUT.bam > $OUT.gam
 vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
 # Irrelevant now since we have the GAM
 rm $OUT.sam $OUT.bam
+
+awk '{sum += $2} END {print "Average identity:", sum}' $OUT.tsv
