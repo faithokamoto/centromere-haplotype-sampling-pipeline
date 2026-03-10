@@ -21,12 +21,8 @@ def load_truth_table(path: str) -> Dict[str, str]:
     truth = {}
     with open(path) as file:
         for line in file:
-            parts = line.strip().split(',')
-            if len(parts) != 2:
-                continue
-            hap, cenhap = parts[0], parts[1]
-            if cenhap:
-                truth[hap] = cenhap
+            parts = line.strip().split('\n')
+            truth[parts[0]] = parts[1]
     return truth
 
 def parse_guess_from_log(path: str) -> str:
@@ -80,7 +76,6 @@ def build_matrix(truth_map: Dict[str, str], guess_map: Dict[str, str]
 
     return mat, truth_labels, guess_labels
 
-
 def plot_heatmap(counts: np.ndarray, truth_labels: List[str], 
                  guess_labels: List[str], output_file: str) -> None:
     """Plot row-normalized heatmap with count annotations."""
@@ -111,7 +106,6 @@ def plot_heatmap(counts: np.ndarray, truth_labels: List[str],
 
     plt.tight_layout()
     plt.savefig(output_file, dpi=300)
-
 
 if __name__ == "__main__":
     args = parse_args()
