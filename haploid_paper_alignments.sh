@@ -119,7 +119,7 @@ if [ ! -f ${REAL_READS}.fastq ]; then
 
     # Clean up memory; we only need FASTQ files & the nodes TSV
     rm -f $full_bam ${REAL_READS}.bed ${REAL_READS}.sam ${REAL_READS}.no_header.sam
-    rm -f ${REAL_READS}.header ${REAL_READS}.edited.sam ${REAL_READS}.combined.sam
+    rm -f ${REAL_READS}.header ${REAL_READS}.edited.sam ${REAL_READS}.combined.sam ${REAL_READS}.gam
 fi
 
 if [ ! -f ${REAL_READS}.fastq ]; then
@@ -154,14 +154,9 @@ fi
 
 # ---- align to to haplotype-sampled graphs ----
 
-echo "kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
-    $KMER_DIR/${ORIG_PATH_NAME}.real $KMER_DIR"
 kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
     $KMER_DIR/${ORIG_PATH_NAME}.real "$KMER_DIR"
 
-echo "vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist \
-    -g /dev/null --ban-sample $SAMPLE_ID ${BIG_GRAPH}.gbz 2> $GUESS_LOG"
 # Sample 10 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist \
