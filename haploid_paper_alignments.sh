@@ -160,9 +160,9 @@ fi
 kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
     $KMER_DIR/${ORIG_PATH_NAME}.real "$KMER_DIR"
 
-# Sample 10 haps without alignment, so we can guess ideal # to sample
+# Sample 5 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist \
+    --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> "$GUESS_LOG"
 
 # Use logfile to guess
