@@ -166,7 +166,8 @@ vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> "$GUESS_LOG"
 
 # Use logfile to guess
-./guess_n_and_cenhap.py --ploidy 1 --cenhap-table "$CENHAP_TABLE" "$GUESS_LOG" &>> "$GUESS_LOG"
+./guess_n_and_cenhap.py --ploidy 1 --cenhap-table "$CENHAP_TABLE" \
+        --dist-matrix $DISTS "$GUESS_LOG" &>> "$GUESS_LOG"
 cat "$GUESS_LOG"
 
 n_to_sample=`fgrep Best "$GUESS_LOG" | cut -d " " -f4`
