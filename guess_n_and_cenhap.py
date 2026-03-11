@@ -56,11 +56,8 @@ def read_cenhap_table(cenhap_file: str) -> Dict[str, str]:
     with open(cenhap_file, 'r') as file:
         file.readline()  # Skip header
         for line in file:
-            parts = line.strip().split(',')
-            haplo, cenhap = parts[0], parts[1]
-            # Handle missing cenhap assignments
-            if cenhap != '':
-                cenhap_table[haplo] = cenhap
+            parts = line.strip().split('\t')
+            cenhap_table[parts[0]] = parts[1]
     return cenhap_table
 
 def guess_optimal_n(sampled: List[SampledHaplotype], fall_threshold: int,
