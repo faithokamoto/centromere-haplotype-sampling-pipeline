@@ -21,10 +21,10 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=8:00:00
+#SBATCH --time=4:00:00
 #
 # Array job specification:
-#SBATCH --array=1-100%10
+#SBATCH --array=1-100%5
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
