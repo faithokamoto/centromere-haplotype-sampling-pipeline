@@ -13,4 +13,4 @@ OUT=$3
 vg giraffe --progress -b hifi --fastq-in $READS --gbz-name $GRAPH -t 20 > $OUT.gam 2> $OUT.log
 vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
 
-awk '{sum += $2} END {print "Average identity:", sum}' $OUT.tsv
+awk '{sum += $2} END {print "Average identity:", sum / (NR - 1)}' $OUT.tsv
