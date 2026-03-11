@@ -20,8 +20,9 @@ def load_truth_table(path: str) -> Dict[str, str]:
     """Read truth cenhap table into {haplo: cenhap} dict."""
     truth = {}
     with open(path) as file:
+        file.readline() # header
         for line in file:
-            parts = line.strip().split('\n')
+            parts = line.strip().split('\t')
             truth[parts[0]] = parts[1]
     return truth
 
