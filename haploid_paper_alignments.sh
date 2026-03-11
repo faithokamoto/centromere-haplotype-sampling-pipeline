@@ -44,7 +44,7 @@ set -e
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/chr12
 DISTS=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/all_pairs/distance_matrices/chr12_r2_QC_v2_centrolign_pairwise_distance.csv
-CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/notes/correct_cenhaps_chr12/chr12_cenhap_assignments_final.csv
+CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/chr12/chr12.cenhap_predictions.tsv
 
 REAL_READS=$PROJ_DIR/to_align/real_${ORIG_PATH_NAME}.chr12.hifi
 
@@ -81,7 +81,6 @@ echo "Nearest neighbor: $neighbor_path_name"
 
 # ---- get reads to align ----
 
-rm -f ${REAL_READS}.fastq
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
     echo "Downloading reads for $ORIG_PATH_NAME from AWS"
