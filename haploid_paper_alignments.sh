@@ -84,17 +84,21 @@ echo "Nearest neighbor: $neighbor_path_name"
 rm -f ${REAL_READS}.fastq
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
-    echo "Downloading reads for $ORIG_PATH_NAME from AWS:"
+    echo "Downloading reads for $ORIG_PATH_NAME from AWS"
     reads=`grep "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | cut -f3 -d ","` 
     full_bam=$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
-    aws s3 --no-sign-request cp $reads $full_bam &> /dev/null
+    aws s3 --no-sign-request cp "$reads" "$full_bam" &> /dev/null
+    echo "Download complete"
     if [ ! -f "$full_bam" ]; then
         echo "ERROR: Could not find reads for $ORIG_PATH_NAME"
         exit 1
     fi
     # Subset BAM to only chr12 reads
     grep chr12 ${BED_DIR}/${SAMPLE_NAME}_* > ${REAL_READS}.bed
-    samtools view -@32 -L ${REAL_READS}.bed -h $full_bam > ${REAL_READS}.sam
+    samtools view -@32 -L ${REAL_READS}.bed -h "$full_bam" > ${REAL_READS}.sam
+    # Get rid of giant BAM file for space
+    rm $PROJ_DIR/to_align/${ORIG_PATH_NAME}.*bam*
+    echo "Cleaned up BAM file"
 
     # Edit SAM to something compatible with the graph
     old_path_name=`cut -f1 ${REAL_READS}.bed`
@@ -118,8 +122,8 @@ if [ ! -f ${REAL_READS}.fastq ]; then
     vg view --fastq-out ${REAL_READS}.gam > ${REAL_READS}.fastq
 
     # Clean up memory; we only need FASTQ files & the nodes TSV
-    rm -f $full_bam ${REAL_READS}.bed ${REAL_READS}.sam ${REAL_READS}.no_header.sam
-    rm -f ${REAL_READS}.header ${REAL_READS}.edited.sam ${REAL_READS}.combined.sam ${REAL_READS}.gam
+    rm -f ${REAL_READS}.bed ${REAL_READS}.sam ${REAL_READS}.no_header.sam ${REAL_READS}.header
+    rm -f ${REAL_READS}.edited.sam ${REAL_READS}.combined.sam ${REAL_READS}.gam
 fi
 
 if [ ! -f ${REAL_READS}.fastq ]; then
