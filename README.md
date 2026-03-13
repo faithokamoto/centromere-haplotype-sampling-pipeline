@@ -72,20 +72,6 @@ in the second column. It also tries to type the cenhap (this is bad).
     - `LICENSE`: the MIT license as it applies to this repository
     - `README.md`: this file, which explains the repository
 
-## vg modifications
-
-I insert these lines right after [haplotype selection][SelectionCode].
-
-```c++
-for (size_t i = 0; i < selected_haplotypes.size(); i++) {
-    gbwt::size_type sequence_id = subchain.sequences[selected_haplotypes[i].first].first;
-    gbwt::size_type path_id = gbwt::Path::id(sequence_id);
-    gbwt::FullPathName path_name = this->gbz.index.metadata.fullPath(path_id);
-    cerr << "Selected haplotype " << path_name.contig_name 
-         << " with score " << selected_haplotypes[i].second << endl;
-}
-```
-
 [Centrolign]: https://github.com/jeizenga/centrolign
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling
 [LRgiraffe]: https://doi.org/10.1101/2025.09.29.678807
