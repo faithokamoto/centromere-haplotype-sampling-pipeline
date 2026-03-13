@@ -37,9 +37,4 @@ path_name=`grep "^P" "$GFA" | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -
 echo "Running path: $path_name"
 
 log=$DIR/log/${path_name}.log
-if fgrep -q "Best guess" $log
-then
-    echo "Already done"
-else
-    $DIR/haploid_paper_alignments.sh $path_name &> $log
-fi
+$DIR/haploid_paper_alignments.sh $path_name &> $log

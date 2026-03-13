@@ -3,6 +3,8 @@
 # Usage: haploid_paper_alignments.sh <original path name>
 # Example: haploid_paper_alignments.sh HG00099.1
 
+set -e
+
 # ---- process arguments ----
 
 echo "Top of haploid_paper_alignments.sh with ${1} input"
@@ -12,38 +14,11 @@ SAMPLE_ID=`echo "$ORIG_PATH_NAME" | cut -f1 -d "." `
 HAPLO_NUM=`echo "$ORIG_PATH_NAME" | cut -f2 -d "." `
 PATH_NAME="${SAMPLE_ID}#${HAPLO_NUM}#${ORIG_PATH_NAME}#0"
 
-BED_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/extract_hors_HPRC/release2/contiguous_HORs_bed_files
-
-ls ${BED_DIR}/${SAMPLE_ID}_* &>/dev/null
-if [ $? -ne 0 ]; then
-    echo "No BED files available for $SAMPLE_ID"
-    exit 1
-fi
-
-ls ${BED_DIR}/${SAMPLE_ID}_hap1_* &>/dev/null
-if [ $? -eq 0 ]; then
-    if [ "$HAPLO_NUM" -eq "1" ]; then
-        SAMPLE_NAME=${SAMPLE_ID}_hap1
-    else
-        SAMPLE_NAME=${SAMPLE_ID}_hap2
-    fi
-else
-    if [ "$HAPLO_NUM" -eq "1" ]; then
-        SAMPLE_NAME=${SAMPLE_ID}_pat
-    else
-        SAMPLE_NAME=${SAMPLE_ID}_mat
-    fi
-fi
-
-echo "Processing sample: $SAMPLE_NAME"
-
-# ---- set up variables ----
-
-set -e
-
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/chr12
-DISTS=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/all_pairs/distance_matrices/chr12_r2_QC_v2_centrolign_pairwise_distance.csv
+MIRA_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2
+BED_DIR=$MIRA_DIR/per_smp_asat_beds
+DISTS=$MIRA_DIR/all_pairs/distance_matrices/chr12_r2_QC_v2_centrolign_pairwise_distance.csv
 CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/chr12/chr12.cenhap_predictions.tsv
 
 REAL_READS=$PROJ_DIR/to_align/real_${ORIG_PATH_NAME}.chr12.hifi
@@ -81,6 +56,7 @@ echo "Nearest neighbor: $neighbor_path_name"
 
 # ---- get reads to align ----
 
+rm ${REAL_READS}.fastq
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
     echo "Downloading reads for $ORIG_PATH_NAME from AWS"
@@ -93,16 +69,7 @@ if [ ! -f ${REAL_READS}.fastq ]; then
         exit 1
     fi
     # Subset BAM to only chr12 reads
-    grep chr12 ${BED_DIR}/${SAMPLE_NAME}_* > ${REAL_READS}.bed
-    if [ ! -s ${REAL_READS}.bed ]; then
-        echo "Found chr12 array coordinates:"
-        cat ${REAL_READS}.bed 
-    else
-        echo "ERROR: Could not find chr12 array coordinates:"
-        cat ${BED_DIR}/${SAMPLE_NAME}_*
-        rm $PROJ_DIR/to_align/${ORIG_PATH_NAME}.*bam*
-        exit 1
-    fi
+    grep chr12 ${BED_DIR}/${ORIG_PATH_NAME}_asat_arrays.bed > ${REAL_READS}.bed
     samtools view -@32 -L ${REAL_READS}.bed -h "$full_bam" > ${REAL_READS}.sam
     # Get rid of giant BAM file for space
     rm $PROJ_DIR/to_align/${ORIG_PATH_NAME}.*bam*
