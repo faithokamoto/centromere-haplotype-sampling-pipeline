@@ -94,6 +94,15 @@ if [ ! -f ${REAL_READS}.fastq ]; then
     fi
     # Subset BAM to only chr12 reads
     grep chr12 ${BED_DIR}/${SAMPLE_NAME}_* > ${REAL_READS}.bed
+    if [ ! -s ${REAL_READS}.bed ]; then
+        echo "Found chr12 array coordinates:"
+        cat ${REAL_READS}.bed 
+    else
+        echo "ERROR: Could not find chr12 array coordinates:"
+        cat ${BED_DIR}/${SAMPLE_NAME}_*
+        rm $PROJ_DIR/to_align/${ORIG_PATH_NAME}.*bam*
+        exit 1
+    fi
     samtools view -@32 -L ${REAL_READS}.bed -h "$full_bam" > ${REAL_READS}.sam
     # Get rid of giant BAM file for space
     rm $PROJ_DIR/to_align/${ORIG_PATH_NAME}.*bam*
@@ -105,7 +114,7 @@ if [ ! -f ${REAL_READS}.fastq ]; then
     end=`cut -f3 ${REAL_READS}.bed`
     new_path_name=`echo $PATH_NAME | sed 's/#0//g'`
     samtools view ${REAL_READS}.sam > ${REAL_READS}.no_header.sam
-    samtools view -H ${REAL_READS}.sam | sed "s/$old_path_name/$new_path_name/"> ${REAL_READS}.header
+    samtools view -H ${REAL_READS}.sam | sed "s/$old_path_name/$new_path_name/" > ${REAL_READS}.header
     # Filter for reads which appear within the BED file's boundaries
     # while also editing the coordinates to be graph-friendly
     awk -v contig="$new_path_name" -v start="$start" -v end="$end" \
