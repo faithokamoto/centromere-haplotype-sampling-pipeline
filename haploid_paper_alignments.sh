@@ -56,7 +56,7 @@ echo "Nearest neighbor: $neighbor_path_name"
 
 # ---- get reads to align ----
 
-rm ${REAL_READS}.fastq
+rm -f ${REAL_READS}.fastq
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
     echo "Downloading reads for $ORIG_PATH_NAME from AWS"

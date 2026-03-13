@@ -10,7 +10,7 @@ OUT=$3
 SAMPLE_ID=`echo "$PATH_NAME" | cut -f1 -d "#"`
 
 # Only bother if needed
-if [  -f ${OUT}.mmi ]; then
+if [ ! -f ${OUT}.mmi ]; then
     vg mod --keep-path "$PATH_NAME" "$BIG_GRAPH" > ${OUT}.vg
     # Convert to GBZ
     vg gbwt --index-paths -x ${OUT}.vg -o ${OUT}.no_ref.gbwt
