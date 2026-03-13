@@ -25,4 +25,4 @@ if [  -f ${OUT}.mmi ]; then
     # Avoid reusing an old index
     rm -f "${OUT}.fasta.fai"
     minimap2 -x map-hifi -d ${OUT}.mmi ${OUT}.fasta
-done
+fi
