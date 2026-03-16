@@ -60,13 +60,13 @@ if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
     echo "Downloading reads for $ORIG_PATH_NAME from AWS"
     reads=`grep "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | cut -f3 -d ","` 
-    full_bam=$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
-    aws s3 --no-sign-request cp "$reads" "$full_bam" &> /dev/null
-    echo "Download complete"
-    if [ ! -f "$full_bam" ]; then
+    if [ `echo $reads | wc -l` -eq 0 ]; then
         echo "ERROR: Could not find reads for $ORIG_PATH_NAME"
         exit 1
     fi
+    full_bam=$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
+    aws s3 --no-sign-request cp "$reads" "$full_bam" &> /dev/null
+    echo "Download complete"
     # Subset BAM to only chr12 reads
     grep chr12 ${BED_DIR}/${ORIG_PATH_NAME}_asat_arrays.bed > ${REAL_READS}.bed
     samtools view -@32 -L ${REAL_READS}.bed -h "$full_bam" > ${REAL_READS}.sam
