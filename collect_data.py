@@ -213,6 +213,9 @@ def load_truth_nodes(read_tsv: str) -> Dict[str, Set[int]]:
         file.readline() # header
         for line in file:
             parts = line.strip().split()
+            if len(parts) < 2:
+                print(read_tsv)
+                return None
             truth_nodes[parts[0]] = parse_node_list(parts[1])
 
     return truth_nodes
@@ -259,6 +262,9 @@ def calc_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
             else:
                 raise ValueError(f'No nodes in line from {aln_tsv_file}')
 
+    if not identity_scores:
+        print(aln_tsv_file)
+        return None, None
     mean_identity = sum(identity_scores) / len(identity_scores)
     mean_correctness = sum(correctness_scores) / len(correctness_scores)
     return mean_identity, mean_correctness
@@ -301,7 +307,11 @@ def write_data(cenhap_table: Dict[str, str],
 
         truth_node_file = os.path.join(args.reads_dir, 
                                        f'real_{path_name}.chr12.hifi.tsv')
+        if not os.path.exists(truth_node_file):
+            continue
         truth_nodes = load_truth_nodes(truth_node_file)
+        if truth_nodes is None:
+            continue
         for aln_group, tsv_suffix in ALN_SUFFIXES.items():
             # Construct appropriate inputs
             aln_tsv_file = f'{args.aln_dir}/{path_name}.{tsv_suffix}'
@@ -309,6 +319,8 @@ def write_data(cenhap_table: Dict[str, str],
             # Add stats to the list of values to write
             identity, correctness = calc_aln_stats(
                 truth_nodes, private_nodes[path_name], aln_tsv_file, is_native)
+            if identity is None:
+                continue
             items_to_write += [identity, correctness]
 
         print('\t'.join(str(item) for item in items_to_write))
