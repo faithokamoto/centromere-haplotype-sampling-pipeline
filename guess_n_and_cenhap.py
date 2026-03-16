@@ -23,11 +23,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Guess n to sample & cenhap")
     parser.add_argument("--fall-threshold", '-f', type=int, default=500,
                         help="Hard limit for score drop from top score")
-    parser.add_argument("--plateau-threshold", '-p', type=int, default=50,
-                        help="Required score drop between haplotypes")
     parser.add_argument("--cenhap-table", type=str, help="Cenhap assignments")
     parser.add_argument("--dist-matrix", type=str, help="Distance matrix")
-    parser.add_argument("--ploidy", type=int, help="Sample ploidy (1/2)")
     parser.add_argument("logfile", type=str, help="Logfile to read from")
     return parser.parse_args()
 
@@ -104,67 +101,25 @@ def print_dist_info(dist_matrix: Dict[str, Dict[str, float]],
         top_name = top_dist[i]
         print(f"{top_name} is dist {dist_matrix[path_name][top_name]}")
 
-def guess_optimal_n(sampled: List[SampledHaplotype], fall_threshold: int,
-                    plateau_threshold: int) -> int:
+def guess_optimal_n(sampled: List[SampledHaplotype], threshold: int) -> int:
     """Guess the optimal number of haplotypes to sample.
 
-    If score drops more than fall_threshold from the top,
-    or drops less than plateau_threshold between haps,
+    If score drops more than threshold from the top,
     don't use the next sampled haplotype.
     """
 
     max_score = sampled[0].score
-    prev_score = sampled[0].score
-
     
     for i in range(1, len(sampled)):
         cur_score = sampled[i].score
 
         # Check if we should stop here (= use prev i haps)
-        if cur_score < max_score - fall_threshold:
+        if cur_score < max_score - threshold:
             # We've fallen too far
             return i
-        elif (cur_score > prev_score - plateau_threshold
-              and cur_score < max_score - (fall_threshold / 2)):
-            # We're not falling fast enough (hit plateau)
-            # & we fell enough to invoke plateau
-            return i - 1
-        
-        prev_score = cur_score
         
     # Guess we're using all of these
     return len(sampled)
-
-def guess_cenhap(sampled: List[SampledHaplotype], cenhap_table: Dict[str, str], 
-                 ploidy: int, n_to_use: int) -> str:
-    """Guess the cenhap for the sampled haplotypes.
-    
-    Look up cenhap assignments for top n sampled haplotypes
-    and use that to guess cenhap via weighted 'voting'
-    (last sampled gets 1, next up gets 2, etc.)
-    """
-    # Calculate weighted score for each cenhap type
-    cenhap_scores = {}
-    for i in range(n_to_use):
-        cenhap = cenhap_table.get(sampled[i].name, None)
-        if cenhap is not None:
-            # Lower i get bigger votes
-            vote = n_to_use - i
-            cenhap_scores[cenhap] = cenhap_scores.get(cenhap, 0) + vote
-    # Guess the cenhap with the highest score
-    if not cenhap_scores:
-        return 'Unknown'
-    else:
-        if ploidy == 2:
-            # For diploid, return both cenhaps separated by '/'
-            sorted_cenhaps = sorted(cenhap_scores.items(), 
-                                    key=lambda x: x[1], reverse=True)
-            if len(sorted_cenhaps) >= 2:
-                return f"{sorted_cenhaps[0][0]}/{sorted_cenhaps[1][0]}"
-            else:
-                return f"{sorted_cenhaps[0][0]}/{sorted_cenhaps[0][0]}"
-        else:
-            return max(cenhap_scores.items(), key=lambda x: x[1])[0]
 
 if __name__ == "__main__":
     args = parse_args()
@@ -174,10 +129,9 @@ if __name__ == "__main__":
     path_name_parts = args.logfile.split("/")[-1].split(".")
     path_name = f'{path_name_parts[0]}.{path_name_parts[1]}'
     print_dist_info(matrix, scores, path_name)
-    optimal_n = guess_optimal_n(scores, args.fall_threshold,
-                                args.plateau_threshold)
+    optimal_n = guess_optimal_n(scores, args.fall_threshold)
     
     cenhap_table = read_cenhap_table(args.cenhap_table)
-    cenhap = guess_cenhap(scores, cenhap_table, args.ploidy, optimal_n)
+    cenhap = cenhap_table.get(scores[0].name)
     
     print(f"Best guess: use {optimal_n} haplotypes & sample cenhap = {cenhap}")
