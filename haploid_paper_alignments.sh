@@ -56,7 +56,6 @@ echo "Nearest neighbor: $neighbor_path_name"
 
 # ---- get reads to align ----
 
-rm -f ${REAL_READS}.fastq
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
     echo "Downloading reads for $ORIG_PATH_NAME from AWS"
@@ -80,14 +79,12 @@ if [ ! -f ${REAL_READS}.fastq ]; then
     start=`cut -f2 ${REAL_READS}.bed`
     end=`cut -f3 ${REAL_READS}.bed`
     new_path_name=`echo $PATH_NAME | sed 's/#0//g'`
-    samtools view ${REAL_READS}.sam > ${REAL_READS}.no_header.sam
+    samtools view ${REAL_READS}.sam | sed "s/$old_path_name/$new_path_name/" > ${REAL_READS}.no_header.sam
     samtools view -H ${REAL_READS}.sam | sed "s/$old_path_name/$new_path_name/" > ${REAL_READS}.header
     # Filter for reads which appear within the BED file's boundaries
     # while also editing the coordinates to be graph-friendly
-    awk -v contig="$new_path_name" -v start="$start" -v end="$end" \
-        '{if (($4 - start + 1 >= 0) && ($4 + length($10) <= end)) 
-            {print $1, $2, contig, $4 - start + 1, $5, $6, $7, $8, $9, $10, $11}}' \
-        ${REAL_READS}.no_header.sam | tr " " "\t" > ${REAL_READS}.edited.sam
+    ./helper_scripts/edit_sam.py --start "$start" --end "$end" \
+        ${REAL_READS}.no_header.sam > ${REAL_READS}.edited.sam
     cat ${REAL_READS}.header ${REAL_READS}.edited.sam > ${REAL_READS}.combined.sam
     
     # Get truth positions
@@ -142,7 +139,7 @@ vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> "$GUESS_LOG"
 
 # Use logfile to guess
-./guess_n_and_cenhap.py --ploidy 1 --cenhap-table "$CENHAP_TABLE" \
+./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" \
         --dist-matrix $DISTS "$GUESS_LOG" &>> "$GUESS_LOG"
 cat "$GUESS_LOG"
 
