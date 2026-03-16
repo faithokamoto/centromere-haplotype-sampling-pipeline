@@ -175,7 +175,7 @@ def find_private_nodes(gfa_file: str) -> Dict[str, Set[int]]:
     return {path_name : {n for n in nodes if node_counts[n] == 1}
             for path_name, nodes in path_nodes.items()}
 
-def find_guesses(log_file: str) -> Tuple[List[str], str]:
+def find_guesses(log_file: str) -> Tuple[List[str], List[str], str]:
     """Look up the guessed # of sampled haplotypes & cenhap.
     
     Pulls # of sampled haplotypes and guessed cenhap from line
@@ -184,19 +184,22 @@ def find_guesses(log_file: str) -> Tuple[List[str], str]:
     "Selected haplotype <name> with score <score>" lines
     which must appear before the best-guess line.
 
-    Returns a list of the haplotypes used, in order, along with
+    Returns a list of the haplotypes used, 
+    and a list of their scores, in order, along with
     the cenhap guessed for the source haplotype.
     """
 
     sampled_haps = []
+    scores = []
     with open(log_file) as file:
         for line in file:
+            parts = line.strip().split()
             if line.startswith('Selected haplotype'):
-                sampled_haps.append(line.split()[2])
+                sampled_haps.append(parts[2])
+                scores.append(parts[5])
             elif line.startswith('Best guess'):
-                parts = line.strip().split()
                 n_haps = int(parts[3])
-                return (sampled_haps[:n_haps], parts[-1])
+                return (sampled_haps[:n_haps], scores, parts[-1])
             
     return (None, None)
 
@@ -275,8 +278,8 @@ def write_data(cenhap_table: Dict[str, str],
     """Write the output TSV (see file docstring)."""
     # Write header
     column_titles = ['Path name', 'Truth cenhap', 'Guessed cenhap',
-                     '# haplotypes sampled', 'Minimum graph distance',
-                     'Minimum sampled distance']
+                     '# haplotypes sampled', 'Sampling scores',
+                     'Minimum graph distance', 'Minimum sampled distance']
     for aln_group in ALN_SUFFIXES.keys():
         column_titles += [f'{aln_group} identity', f'{aln_group} correctness']
     print('\t'.join(column_titles))
@@ -290,11 +293,11 @@ def write_data(cenhap_table: Dict[str, str],
             continue
 
         # Add guesses from logfile
-        sampled, guess_cenhap = find_guesses(guess_file)
+        sampled, scores, guess_cenhap = find_guesses(guess_file)
         if not sampled:
             # No haplotype sampling occurred; skip
             continue
-        items_to_write += [guess_cenhap, len(sampled)]
+        items_to_write += [guess_cenhap, ','.join(scores), len(sampled)]
 
         # Look up distances
         dist_row = dist_matrix[path_name]
