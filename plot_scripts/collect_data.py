@@ -217,8 +217,7 @@ def load_truth_nodes(read_tsv: str) -> Dict[str, Set[int]]:
         for line in file:
             parts = line.strip().split()
             if len(parts) < 2:
-                print(read_tsv)
-                return None
+                pass
             truth_nodes[parts[0]] = parse_node_list(parts[1])
 
     return truth_nodes
@@ -251,17 +250,18 @@ def calc_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
                 correctness_scores.append(0)
             elif len(parts) == 3:
                 aln_nodes = parse_node_list(parts[2])
-                truth = truth_nodes[parts[0]]
+                if parts[0] in truth_nodes:
+                    truth = truth_nodes[parts[0]]
 
-                if not is_native:
-                    # Don't require alignments to private nodes
-                    truth -= private_nodes
-                if not truth:
-                    # All truth nodes have been thrown out
-                    continue
-                
-                overlap = truth & aln_nodes
-                correctness_scores.append(100 * len(overlap) / len(truth))
+                    if not is_native:
+                        # Don't require alignments to private nodes
+                        truth -= private_nodes
+                    if not truth:
+                        # All truth nodes have been thrown out
+                        continue
+                    
+                    overlap = truth & aln_nodes
+                    correctness_scores.append(100 * len(overlap) / len(truth))
             else:
                 raise ValueError(f'No nodes in line from {aln_tsv_file}')
 
