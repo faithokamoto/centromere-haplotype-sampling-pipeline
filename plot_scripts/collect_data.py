@@ -190,22 +190,19 @@ def find_guesses(log_file: str) -> Tuple[List[str], List[str], str]:
     "Selected haplotype <name> with score <score>" lines
     which must appear before the best-guess line.
 
-    Returns a list of the haplotypes used, 
-    and a list of their scores, in order, along with
+    Returns a list of the haplotypes used, along with
     the cenhap guessed for the source haplotype.
     """
 
     sampled_haps = []
-    scores = []
     with open(log_file) as file:
         for line in file:
             parts = line.strip().split()
             if line.startswith('Selected haplotype'):
                 sampled_haps.append(parts[2])
-                scores.append(parts[5])
             elif line.startswith('Best guess'):
                 n_haps = int(parts[3])
-                return (sampled_haps[:n_haps], scores, parts[-1])
+                return (sampled_haps[:n_haps], parts[-1])
             
     return (None, None)
 
@@ -334,11 +331,11 @@ def write_data(cenhap_table: Dict[str, str],
             continue
 
         # Add guesses from logfile
-        sampled, scores, guess_cenhap = find_guesses(guess_file)
+        sampled, guess_cenhap = find_guesses(guess_file)
         if not sampled:
             # No haplotype sampling occurred; skip
             continue
-        items_to_write += [guess_cenhap, ','.join(scores), len(sampled)]
+        items_to_write += [guess_cenhap, len(sampled)]
 
         # Look up distances
         dist_row = dist_matrix[path_name]
