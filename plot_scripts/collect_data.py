@@ -315,7 +315,6 @@ def write_data(cenhap_table: Dict[str, str],
     """Write the output TSV (see file docstring)."""
     # Write header
     column_titles = ['Path name', 'Truth cenhap', 'Guessed cenhap',
-                     '# haplotypes sampled', 'Sampling scores',
                      'Minimum graph distance', 'Minimum sampled distance']
     for aln_group in ALN_INFIXES.keys():
         column_titles += [f'{aln_group} identity', f'{aln_group} correctness',
@@ -335,7 +334,7 @@ def write_data(cenhap_table: Dict[str, str],
         if not sampled:
             # No haplotype sampling occurred; skip
             continue
-        items_to_write += [guess_cenhap, len(sampled)]
+        items_to_write.append(guess_cenhap)
 
         # Look up distances
         dist_row = dist_matrix[path_name]
