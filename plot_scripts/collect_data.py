@@ -10,7 +10,7 @@ For each haplotype run, collect
 - Num haplotypes sampled
 - Distance to closest hap in graph
 - Distance to closest sampled hap (within the ones we chose to align to)
-- Identity & correctness for each alignment run:
+- Stats (identity, correctness, runtime, memory usage) for each alignment run:
     - Minimap2 CHM13
     - Giraffe CHM13
     - Minimap2 neighbor
@@ -45,10 +45,16 @@ Sample-specific inputs:
     Expects columns for read name and then comma-separated nodes.
     The node list is allowed to end with a comma.
     Also expects a header line but it will be skipped.
-- Alignment metadata (<--aln-dir>/<path>.<suffix>), with ALN_SUFFIXES suffixes.
+- Alignment metadata (<--aln-dir>/<path>.<suffix>.tsv), with ALN_INFIXES.
     Expects columns for read name, identity, and comma-separated nodes.
     The node list is allowed to end with a comma.
     Also expects a header line but it will be skipped.
+- Alignment logs (<--aln-dir>/<path>.<suffix>.log), with ALN_INFIXES.
+    For Minimap2 logs, pulls CPU time Y and memory Z from lines like
+        [M::main] Real time: X sec; CPU: Y sec; Peak RSS: Z GB
+    For Giraffe logs, pulls CPU time Y and memory Z from lines like
+        [vg giraffe] Used Y CPU-seconds (including output).
+        [vg giraffe] Memory footprint: Z GB
 
 == Correctness calculations ==
 
@@ -73,14 +79,14 @@ import argparse # Command line argument parsing
 import os # File system interaction
 from typing import Dict, List, Tuple, Set # Type hints
 
-ALN_SUFFIXES = {
-         'CHM13 minimap2' : 'chm13.real.minimap2.tsv',
-          'CHM13 giraffe' : 'chm13.real.giraffe.tsv',
-      'Neighbor minimap2' : 'neighbor.real.minimap2.tsv',
-       'Neighbor giraffe' : 'neighbor.real.giraffe.tsv',
-        'Sampled giraffe' : 'sampled.real.giraffe.tsv',
-    'Native hap minimap2' : 'own_hap.real.minimap2.tsv',
-     'Native hap giraffe' : 'own_hap.real.giraffe.tsv',
+ALN_INFIXES = {
+         'CHM13 minimap2' : 'chm13.real.minimap2',
+          'CHM13 giraffe' : 'chm13.real.giraffe',
+      'Neighbor minimap2' : 'neighbor.real.minimap2',
+       'Neighbor giraffe' : 'neighbor.real.giraffe',
+        'Sampled giraffe' : 'sampled.real.giraffe',
+    'Native hap minimap2' : 'own_hap.real.minimap2',
+     'Native hap giraffe' : 'own_hap.real.giraffe',
 }
 """Alignment runs matched to their TSV suffixes."""
 
@@ -272,6 +278,40 @@ def calc_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
     mean_correctness = sum(correctness_scores) / len(correctness_scores)
     return mean_identity, mean_correctness
 
+def read_runtime_memory_minimap2(log_file: str) -> Tuple[float, float]:
+    """Read runtime and memory usage from Minimap2 log.
+    
+    Uses last line in file, returning (Y, Z)
+        [M::main] Real time: X sec; CPU: Y sec; Peak RSS: Z GB
+    """
+    with open(log_file) as file:
+        for line in file:
+            if 'Real time' in line:
+                parts = line.strip().split()
+                runtime = float(parts[6])
+                memory = float(parts[10])
+                return runtime, memory
+    raise RuntimeError(f'No runtime/memory usage line in {log_file}')
+
+def read_runtime_memory_giraffe(log_file: str) -> Tuple[float, float]:
+    """Read runtime and memory usage from Giraffe log.
+    
+    Uses last few lines in file, returning (Y, Z)
+        [vg giraffe] Used Y CPU-seconds (including output).
+        [vg giraffe] Memory footprint: Z GB
+    """
+    runtime = None
+    memory = None
+    with open(log_file) as file:
+        for line in file:
+            if 'CPU-seconds' in line:
+                runtime = float(line.split()[3])
+            elif 'Memory footprint' in line:
+                memory = float(line.split()[4])
+    if runtime is None or memory is None:
+        raise RuntimeError(f'No runtime/memory usage line in {log_file}')
+    return runtime, memory
+
 def write_data(cenhap_table: Dict[str, str], 
                dist_matrix: Dict[str, Dict[str, float]],
                private_nodes: Dict[str, Set[str]]) -> None:
@@ -280,8 +320,9 @@ def write_data(cenhap_table: Dict[str, str],
     column_titles = ['Path name', 'Truth cenhap', 'Guessed cenhap',
                      '# haplotypes sampled', 'Sampling scores',
                      'Minimum graph distance', 'Minimum sampled distance']
-    for aln_group in ALN_SUFFIXES.keys():
-        column_titles += [f'{aln_group} identity', f'{aln_group} correctness']
+    for aln_group in ALN_INFIXES.keys():
+        column_titles += [f'{aln_group} identity', f'{aln_group} correctness',
+                          f'{aln_group} runtime', f'{aln_group} memory']
     print('\t'.join(column_titles))
 
     for path_name, truth_cenhap in cenhap_table.items():
@@ -315,9 +356,9 @@ def write_data(cenhap_table: Dict[str, str],
         truth_nodes = load_truth_nodes(truth_node_file)
         if truth_nodes is None:
             continue
-        for aln_group, tsv_suffix in ALN_SUFFIXES.items():
-            # Construct appropriate inputs
-            aln_tsv_file = f'{args.aln_dir}/{path_name}.{tsv_suffix}'
+        for aln_group, tsv_infix in ALN_INFIXES.items():
+            # Construct inputs for identity/correctness stats
+            aln_tsv_file = f'{args.aln_dir}/{path_name}.{tsv_infix}.tsv'
             is_native = aln_group.startswith('Native')
             # Add stats to the list of values to write
             identity, correctness = calc_aln_stats(
@@ -325,6 +366,15 @@ def write_data(cenhap_table: Dict[str, str],
             if identity is None:
                 continue
             items_to_write += [identity, correctness]
+
+            # Construct inputs for runtime/memory stats
+            aln_log_file = f'{args.aln_dir}/{path_name}.{tsv_infix}.log'
+            is_minimap2 = 'minimap2' in aln_group
+            if is_minimap2:
+                runtime, memory = read_runtime_memory_minimap2(aln_log_file)
+            else:
+                runtime, memory = read_runtime_memory_giraffe(aln_log_file)
+            items_to_write += [runtime, memory]
 
         print('\t'.join(str(item) for item in items_to_write))
 
