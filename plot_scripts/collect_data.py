@@ -219,9 +219,8 @@ def load_truth_nodes(read_tsv: str) -> Dict[str, Set[int]]:
         file.readline() # header
         for line in file:
             parts = line.strip().split()
-            if len(parts) < 2:
-                break
-            truth_nodes[parts[0]] = parse_node_list(parts[1])
+            if len(parts) == 2:
+                truth_nodes[parts[0]] = parse_node_list(parts[1])
 
     return truth_nodes
 
