@@ -21,10 +21,10 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=8:00:00
+#SBATCH --time=1:00:00
 #
 # Array job specification:
-#SBATCH --array=1-373%8
+#SBATCH --array=1-373
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
@@ -37,4 +37,4 @@ path_name=`grep "^P" "$GFA" | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -
 echo "Running path: $path_name"
 
 log=$DIR/log/${path_name}.log
-$DIR/haploid_paper_alignments.sh $path_name &> $log
+$DIR/haploid_paper_alignments.sh $path_name chr12 &> $log

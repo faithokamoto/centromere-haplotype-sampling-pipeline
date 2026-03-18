@@ -1,7 +1,7 @@
 #!/bin/bash
-# Run haplotype sampling with a leave-one-out graph on chr12
-# Usage: haploid_paper_alignments.sh <original path name>
-# Example: haploid_paper_alignments.sh HG00099.1
+# Run haplotype sampling with a leave-one-out graph
+# Usage: haploid_paper_alignments.sh <original path name> <chromosome>
+# Example: haploid_paper_alignments.sh HG00099.1 chr12
 
 set -e
 
@@ -10,36 +10,37 @@ set -e
 echo "Top of haploid_paper_alignments.sh with ${1} input"
 
 ORIG_PATH_NAME=$1
+CHROM=$2
 SAMPLE_ID=`echo "$ORIG_PATH_NAME" | cut -f1 -d "." `
 HAPLO_NUM=`echo "$ORIG_PATH_NAME" | cut -f2 -d "." `
 PATH_NAME="${SAMPLE_ID}#${HAPLO_NUM}#${ORIG_PATH_NAME}#0"
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
-BIG_GRAPH=$PROJ_DIR/graph/unsampled/chr12
+BIG_GRAPH=$PROJ_DIR/graph/unsampled/$CHROM
 MIRA_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2
 BED_DIR=$MIRA_DIR/per_smp_asat_beds
-DISTS=$MIRA_DIR/all_pairs/distance_matrices/chr12_r2_QC_v2_centrolign_pairwise_distance.csv
-CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/chr12/chr12.cenhap_predictions.tsv
+DISTS=$MIRA_DIR/all_pairs/distance_matrices/${CHROM}_r2_QC_v2_centrolign_pairwise_distance.csv
+CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/${CHROM}/${CHROM}.cenhap_predictions.tsv
 
-REAL_READS=$PROJ_DIR/to_align/real_${ORIG_PATH_NAME}.chr12.hifi
-SIM_READS=$PROJ_DIR/to_align/sim_${ORIG_PATH_NAME}.chr12.hifi
+REAL_READS=$PROJ_DIR/to_align/real_${ORIG_PATH_NAME}.${CHROM}.hifi
+SIM_READS=$PROJ_DIR/to_align/sim_${ORIG_PATH_NAME}.${CHROM}.hifi
 
 GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
 KMER_DIR=$PROJ_DIR/to_align/kmers
 
-CHM13_GRAPH=$GRAPH_DIR/chm13.chr12asat
-OWN_HAP_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.own_hap
-NEIGHBOR_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.neighbor
-SAMPLED_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.sampled
+CHM13_GRAPH=$GRAPH_DIR/chm13.${CHROM}asat
+OWN_HAP_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.own_hap
+NEIGHBOR_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.neighbor
+SAMPLED_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.sampled
 
-OWN_HAP_ALN=$ALN_DIR/${ORIG_PATH_NAME}.own_hap
-NEIGHBOR_ALN=$ALN_DIR/${ORIG_PATH_NAME}.neighbor
-CHM13_ALN=$ALN_DIR/${ORIG_PATH_NAME}.chm13
-SAMPLED_ALN=$ALN_DIR/${ORIG_PATH_NAME}.sampled
+OWN_HAP_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.own_hap
+NEIGHBOR_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.neighbor
+CHM13_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.chm13
+SAMPLED_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.sampled
 
-REAL_GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.real.guess.log
-SIM_GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.sim.guess.log
+REAL_GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.real.guess.log
+SIM_GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.sim.guess.log
 
 # ---- make extra references ----
 
@@ -69,8 +70,8 @@ if [ ! -f ${REAL_READS}.fastq ]; then
     full_bam=$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
     aws s3 --no-sign-request cp "$reads" "$full_bam" &> /dev/null
     echo "Download complete"
-    # Subset BAM to only chr12 reads
-    grep chr12 ${BED_DIR}/${ORIG_PATH_NAME}_asat_arrays.bed > ${REAL_READS}.bed
+    # Subset BAM to only correct-chromosome reads
+    grep ${CHROM} ${BED_DIR}/${ORIG_PATH_NAME}_asat_arrays.bed > ${REAL_READS}.bed
     samtools view -@32 -L ${REAL_READS}.bed -h "$full_bam" > ${REAL_READS}.sam
     # Get rid of giant BAM file for space
     rm $PROJ_DIR/to_align/${ORIG_PATH_NAME}.*bam*
