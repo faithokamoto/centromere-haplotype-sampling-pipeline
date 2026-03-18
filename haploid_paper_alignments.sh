@@ -112,9 +112,10 @@ if [ ! -s ${REAL_READS}.fastq ]; then
 fi
 
 # Generate similar simulated reads
-vg sim -x ${BIG_GRAPH}.gbz --path "$PATH_NAME" --num-reads 5000 \
+num_reads=`grep -c "^@" ${REAL_READS}.fastq`
+vg sim -x ${OWN_HAP_GRAPH}.gbz --num-reads "$num_reads" \
      --random-seed 42 --threads 20 --fastq ${REAL_READS}.fastq \
-     --align-out > ${SIM_READS}.gam
+     --align-out --use-average-length > ${SIM_READS}.gam
 vg filter --tsv-out "name;nodes" ${SIM_READS}.gam > ${SIM_READS}.tsv
 # Convert to FASTQ
 vg view --fastq-out ${SIM_READS}.gam > ${SIM_READS}.fastq
@@ -191,7 +192,8 @@ n_to_sample=`fgrep Best "$REAL_GUESS_LOG" | cut -d " " -f4`
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
-vg autoindex --prefix "$SAMPLED_GRAPH" --no-guessing --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.gbz
+vg autoindex --prefix "$SAMPLED_GRAPH" --no-guessing \
+    --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.gbz 2> /dev/null
 
 ./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.gbz ${REAL_READS}.fastq $SAMPLED_ALN.real.giraffe
 
@@ -218,6 +220,7 @@ n_to_sample=`fgrep Best "$SIM_GUESS_LOG" | cut -d " " -f4`
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
-vg autoindex --prefix "$SAMPLED_GRAPH" --no-guessing --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.gbz
+vg autoindex --prefix "$SAMPLED_GRAPH" --no-guessing \
+    --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.gbz 2> /dev/null
 
 ./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.gbz ${SIM_READS}.fastq $SAMPLED_ALN.sim.giraffe
