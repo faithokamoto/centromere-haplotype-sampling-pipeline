@@ -192,7 +192,7 @@ vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.real.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
 vg autoindex --prefix "$SAMPLED_GRAPH.real" --no-guessing \
-    --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.gbz 2> /dev/null
+    --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.real.gbz 2> /dev/null
 
 ./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz ${REAL_READS}.fastq ${SAMPLED_ALN}.real.giraffe
 
