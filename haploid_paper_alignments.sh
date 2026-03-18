@@ -39,8 +39,7 @@ NEIGHBOR_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.neighbor
 CHM13_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.chm13
 SAMPLED_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.sampled
 
-REAL_GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.real.guess.log
-SIM_GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.sim.guess.log
+GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.guess
 
 # ---- make extra references ----
 
@@ -180,14 +179,14 @@ kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
 # Sample 5 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
-    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> "$REAL_GUESS_LOG"
+    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
 # Use logfile to guess
 ./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" \
-        --dist-matrix $DISTS "$REAL_GUESS_LOG" &>> "$REAL_GUESS_LOG"
-cat "$REAL_GUESS_LOG"
+        --dist-matrix $DISTS ${GUESS_LOG}.real.log &>> ${GUESS_LOG}.real.log
+cat ${GUESS_LOG}.real.log
 
-n_to_sample=`fgrep Best "$REAL_GUESS_LOG" | cut -d " " -f4`
+n_to_sample=`fgrep Best ${GUESS_LOG}.real.log | cut -d " " -f4`
 
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
@@ -195,7 +194,7 @@ vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
 vg autoindex --prefix "$SAMPLED_GRAPH.real" --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.gbz 2> /dev/null
 
-./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz ${REAL_READS}.fastq $SAMPLED_ALN.real.giraffe
+./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz ${REAL_READS}.fastq ${SAMPLED_ALN}.real.giraffe
 
 # ---- align to to haplotype-sampled graphs (sim) ----
 
@@ -208,14 +207,14 @@ kmc -k29 -m128 -okff -t16 -hp ${SIM_READS}.fastq \
 # Sample 5 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
-    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> "$SIM_GUESS_LOG"
+    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.sim.log
 
 # Use logfile to guess
 ./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" \
-        --dist-matrix $DISTS "$SIM_GUESS_LOG" &>> "$SIM_GUESS_LOG"
-cat "$SIM_GUESS_LOG"
+        --dist-matrix $DISTS ${GUESS_LOG}.sim.log &>> ${GUESS_LOG}.sim.log
+cat ${GUESS_LOG}.sim.log
 
-n_to_sample=`fgrep Best "$SIM_GUESS_LOG" | cut -d " " -f4`
+n_to_sample=`fgrep Best ${GUESS_LOG}.sim.log | cut -d " " -f4`
 
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
@@ -223,4 +222,4 @@ vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
 vg autoindex --prefix "$SAMPLED_GRAPH" --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.sim.gbz 2> /dev/null
 
-./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.sim.gbz ${SIM_READS}.fastq $SAMPLED_ALN.sim.giraffe
+./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.sim.gbz ${SIM_READS}.fastq ${SAMPLED_ALN}.sim.giraffe
