@@ -22,6 +22,7 @@ DISTS=$MIRA_DIR/all_pairs/distance_matrices/chr12_r2_QC_v2_centrolign_pairwise_d
 CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/chr12/chr12.cenhap_predictions.tsv
 
 REAL_READS=$PROJ_DIR/to_align/real_${ORIG_PATH_NAME}.chr12.hifi
+SIM_READS=$PROJ_DIR/to_align/sim_${ORIG_PATH_NAME}.chr12.hifi
 
 GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
@@ -37,7 +38,8 @@ NEIGHBOR_ALN=$ALN_DIR/${ORIG_PATH_NAME}.neighbor
 CHM13_ALN=$ALN_DIR/${ORIG_PATH_NAME}.chm13
 SAMPLED_ALN=$ALN_DIR/${ORIG_PATH_NAME}.sampled
 
-GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.guess.log
+REAL_GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.real.guess.log
+SIM_GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.sim.guess.log
 
 # ---- make extra references ----
 
@@ -108,7 +110,21 @@ if [ ! -s ${REAL_READS}.fastq ]; then
     exit 1
 fi
 
-# ---- basic alignments ----
+# Generate similar simulated reads
+vg sim -x ${BIG_GRAPH}.gbz --path "$PATH_NAME" --num-reads 5000 \
+     --random-seed 42 --threads 20 --fastq ${REAL_READS}.fastq \
+     --align-out > ${SIM_READS}.gam
+vg filter --tsv-out "name;nodes" ${SIM_READS}.gam > ${SIM_READS}.tsv
+# Convert to FASTQ
+vg view --fastq-out ${SIM_READS}.gam > ${SIM_READS}.fastq
+
+# Clean up memory; we only need FASTQ files & the nodes TSV
+rm -f ${SIM_READS}.gam
+
+# ---- basic alignments (real reads) ----
+
+echo "====="
+echo "Linear reference alignments for real reads"
 
 # align to own haplotype
 ./helper_scripts/align_reads_minimap2.sh ${OWN_HAP_GRAPH}.mmi \
@@ -128,7 +144,33 @@ fi
 ./helper_scripts/align_reads_giraffe.sh ${NEIGHBOR_GRAPH}.gbz \
     ${REAL_READS}.fastq ${NEIGHBOR_ALN}.real.giraffe
 
-# ---- align to to haplotype-sampled graphs ----
+# ---- basic alignments (sim reads) ----
+
+echo "====="
+echo "Linear reference alignments for sim reads"
+
+# align to own haplotype
+./helper_scripts/align_reads_minimap2.sh ${OWN_HAP_GRAPH}.mmi \
+    ${OWN_HAP_GRAPH}.gbz ${SIM_READS}.fastq ${OWN_HAP_ALN}.sim.minimap2
+./helper_scripts/align_reads_giraffe.sh ${OWN_HAP_GRAPH}.gbz \
+    ${SIM_READS}.fastq ${OWN_HAP_ALN}.sim.giraffe
+
+# align to CHM13
+./helper_scripts/align_reads_minimap2.sh ${CHM13_GRAPH}.mmi \
+    ${CHM13_GRAPH}.gbz ${SIM_READS}.fastq ${CHM13_ALN}.sim.minimap2
+./helper_scripts/align_reads_giraffe.sh ${CHM13_GRAPH}.gbz \
+    ${SIM_READS}.fastq ${CHM13_ALN}.sim.giraffe
+
+# align to nearest neighbor
+./helper_scripts/align_reads_minimap2.sh ${NEIGHBOR_GRAPH}.mmi \
+    ${NEIGHBOR_GRAPH}.gbz ${SIM_READS}.fastq ${NEIGHBOR_ALN}.sim.minimap2
+./helper_scripts/align_reads_giraffe.sh ${NEIGHBOR_GRAPH}.gbz \
+    ${SIM_READS}.fastq ${NEIGHBOR_ALN}.sim.giraffe
+
+# ---- align to to haplotype-sampled graphs (real) ----
+
+echo "====="
+echo "Haplotype sampling on real reads"
 
 kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
     $KMER_DIR/${ORIG_PATH_NAME}.real "$KMER_DIR"
@@ -136,14 +178,14 @@ kmc -k29 -m128 -okff -t16 -hp ${REAL_READS}.fastq \
 # Sample 5 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
-    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> "$GUESS_LOG"
+    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> "$REAL_GUESS_LOG"
 
 # Use logfile to guess
 ./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" \
-        --dist-matrix $DISTS "$GUESS_LOG" &>> "$GUESS_LOG"
-cat "$GUESS_LOG"
+        --dist-matrix $DISTS "$REAL_GUESS_LOG" &>> "$REAL_GUESS_LOG"
+cat "$REAL_GUESS_LOG"
 
-n_to_sample=`fgrep Best "$GUESS_LOG" | cut -d " " -f4`
+n_to_sample=`fgrep Best "$REAL_GUESS_LOG" | cut -d " " -f4`
 
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
@@ -151,3 +193,30 @@ vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
 vg autoindex --prefix "$SAMPLED_GRAPH" --no-guessing --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.gbz
 
 ./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.gbz ${REAL_READS}.fastq $SAMPLED_ALN.real.giraffe
+
+# ---- align to to haplotype-sampled graphs (sim) ----
+
+echo "====="
+echo "Haplotype sampling on sim reads"
+
+kmc -k29 -m128 -okff -t16 -hp ${SIM_READS}.fastq \
+    $KMER_DIR/${ORIG_PATH_NAME}.sim "$KMER_DIR"
+
+# Sample 5 haps without alignment, so we can guess ideal # to sample
+vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
+    --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
+    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> "$SIM_GUESS_LOG"
+
+# Use logfile to guess
+./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" \
+        --dist-matrix $DISTS "$SIM_GUESS_LOG" &>> "$SIM_GUESS_LOG"
+cat "$SIM_GUESS_LOG"
+
+n_to_sample=`fgrep Best "$SIM_GUESS_LOG" | cut -d " " -f4`
+
+vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
+    --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
+    -g ${SAMPLED_GRAPH}.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
+vg autoindex --prefix "$SAMPLED_GRAPH" --no-guessing --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.gbz
+
+./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.gbz ${SIM_READS}.fastq $SAMPLED_ALN.sim.giraffe
