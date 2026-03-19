@@ -27,7 +27,9 @@ SIM_READS=$PROJ_DIR/to_align/sim_${ORIG_PATH_NAME}.${CHROM}.hifi
 
 GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
-KMER_DIR=$PROJ_DIR/to_align/kmers
+KMER_DIR=$PROJ_DIR/to_align/kmers/$ORIG_PATH_NAME
+
+mkdir -p $KMER_DIR
 
 CHM13_GRAPH=$GRAPH_DIR/chm13.${CHROM}asat
 OWN_HAP_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.own_hap
