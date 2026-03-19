@@ -79,7 +79,10 @@ import argparse # Command line argument parsing
 import os # File system interaction
 from typing import Dict, List, Tuple, Set # Type hints
 
-REFS = ['chm13', 'neighbor', 'sampled', 'own_hap']
+REFS = [('CHM13', 'chm13'), 
+        ('Neighbor', 'neighbor'), 
+        ('Sampled', 'sampled'), 
+        ('Native hap', 'own_hap')]
 """References used in alignments."""
 REALNESS = ['real', 'sim']
 """Possible levels of realness."""
@@ -87,9 +90,11 @@ ALIGNERS = ['minimap2', 'giraffe']
 """Names of aligners used."""
 
 # All combinations, except that minimap2 can't align to the sampled graph
-ALN_INFIXES = [f'{ref}.{real}.{tool}' 
-               for ref in REFS for tool in ALIGNERS for real in REALNESS
-               if not (ref == 'sampled' and tool == 'minimap2')]
+ALN_INFIXES = {f'{long_ref} {tool} {real}' : f'{short_ref}.{real}.{tool}' 
+               for long_ref, short_ref in REFS 
+               for tool in ALIGNERS 
+               for real in REALNESS
+               if not (short_ref == 'sampled' and tool == 'minimap2')}
 
 def parse_args() -> argparse.Namespace:
     """Handle command-line argument parsing."""
