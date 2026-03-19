@@ -79,16 +79,17 @@ import argparse # Command line argument parsing
 import os # File system interaction
 from typing import Dict, List, Tuple, Set # Type hints
 
-ALN_INFIXES = {
-         'CHM13 minimap2' : 'chm13.real.minimap2',
-          'CHM13 giraffe' : 'chm13.real.giraffe',
-      'Neighbor minimap2' : 'neighbor.real.minimap2',
-       'Neighbor giraffe' : 'neighbor.real.giraffe',
-        'Sampled giraffe' : 'sampled.real.giraffe',
-    'Native hap minimap2' : 'own_hap.real.minimap2',
-     'Native hap giraffe' : 'own_hap.real.giraffe',
-}
-"""Alignment runs matched to their TSV suffixes."""
+REFS = ['chm13', 'neighbor', 'sampled', 'own_hap']
+"""References used in alignments."""
+REALNESS = ['real', 'sim']
+"""Possible levels of realness."""
+ALIGNERS = ['minimap2', 'giraffe']
+"""Names of aligners used."""
+
+# All combinations, except that minimap2 can't align to the sampled graph
+ALN_INFIXES = [f'{ref}.{real}.{tool}' 
+               for ref in REFS for tool in ALIGNERS for real in REALNESS
+               if not (ref == 'sampled' and tool == 'minimap2')]
 
 def parse_args() -> argparse.Namespace:
     """Handle command-line argument parsing."""
@@ -344,17 +345,20 @@ def write_data(cenhap_table: Dict[str, str],
         items_to_write += [dist_row[true_closest_hap], 
                            dist_row[closest_sampled_hap]]
 
-        truth_node_file = os.path.join(args.reads_dir, 
-                                       f'real_{path_name}.chr12.hifi.tsv')
-        if not os.path.exists(truth_node_file):
-            continue
-        truth_nodes = load_truth_nodes(truth_node_file)
-        if truth_nodes is None:
-            continue
+        real_truth_node_file = os.path.join(args.reads_dir, 
+                                            f'{path_name}.chr12.hifi.real.tsv')
+        real_truth_nodes = load_truth_nodes(real_truth_node_file)
+        sim_truth_node_file = os.path.join(args.reads_dir, 
+                                            f'{path_name}.chr12.hifi.sim.tsv')
+        sim_truth_nodes = load_truth_nodes(sim_truth_node_file)
         for aln_group, tsv_infix in ALN_INFIXES.items():
             # Construct inputs for identity/correctness stats
             aln_tsv_file = f'{args.aln_dir}/{path_name}.{tsv_infix}.tsv'
             is_native = aln_group.startswith('Native')
+            if 'real' in aln_group:
+                truth_nodes = real_truth_nodes
+            else:
+                truth_nodes = sim_truth_nodes
             # Add stats to the list of values to write
             identity, correctness = calc_aln_stats(
                 truth_nodes, private_nodes[path_name], aln_tsv_file, is_native)
@@ -364,8 +368,7 @@ def write_data(cenhap_table: Dict[str, str],
 
             # Construct inputs for runtime/memory stats
             aln_log_file = f'{args.aln_dir}/{path_name}.{tsv_infix}.log'
-            is_minimap2 = 'minimap2' in aln_group
-            if is_minimap2:
+            if 'minimap2' in aln_group:
                 runtime, memory = read_runtime_memory_minimap2(aln_log_file)
             else:
                 runtime, memory = read_runtime_memory_giraffe(aln_log_file)
