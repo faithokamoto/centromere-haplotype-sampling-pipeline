@@ -63,11 +63,11 @@ echo "Nearest neighbor: $neighbor_path_name"
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
     echo "Downloading reads for $ORIG_PATH_NAME from AWS"
-    reads=`grep "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | cut -f3 -d ","` 
-    if [ `echo $reads | wc -l` -eq 0 ]; then
+    if [ `grep -L "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | wc -l` -eq 1 ]; then
         echo "ERROR: Could not find reads for $ORIG_PATH_NAME"
         exit 1
     fi
+    reads=`grep "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | cut -f3 -d ","` 
     full_bam=$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
     aws s3 --no-sign-request cp "$reads" "$full_bam" &> /dev/null
     echo "Download complete"
