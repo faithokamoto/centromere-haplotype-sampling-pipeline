@@ -17,6 +17,7 @@ PATH_NAME="${SAMPLE_ID}#${HAPLO_NUM}#${ORIG_PATH_NAME}#0"
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/$CHROM
+BAM_LOCS=$PROJ_DIR/to_align/aws_file_locations.csv
 MIRA_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2
 BED_DIR=$MIRA_DIR/per_smp_asat_beds
 DISTS=$MIRA_DIR/all_pairs/distance_matrices/${CHROM}_r2_QC_v2_centrolign_pairwise_distance.csv
@@ -63,11 +64,11 @@ echo "Nearest neighbor: $neighbor_path_name"
 if [ ! -f ${REAL_READS}.fastq ]; then
     # Download reads
     echo "Downloading reads for $ORIG_PATH_NAME from AWS"
-    if [ `grep -L "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | wc -l` -eq 1 ]; then
+    if [ `grep -L "^$SAMPLE_ID," "$BAM_LOCS" | wc -l` -eq 1 ]; then
         echo "ERROR: Could not find reads for $ORIG_PATH_NAME"
         exit 1
     fi
-    reads=`grep "^$SAMPLE_ID," $PROJ_DIR/to_align/aws_file_locations.csv | cut -f3 -d ","` 
+    reads=`grep "^$SAMPLE_ID," "$BAM_LOCS" | cut -f3 -d ","` 
     full_bam=$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
     aws s3 --no-sign-request cp "$reads" "$full_bam" &> /dev/null
     echo "Download complete"
