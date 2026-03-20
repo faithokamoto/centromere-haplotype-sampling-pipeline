@@ -329,16 +329,14 @@ def write_data(cenhap_table: Dict[str, str],
     for path_name, truth_cenhap in cenhap_table.items():
         items_to_write = [path_name, truth_cenhap]
         
-        guess_file = os.path.join(args.log_dir, f'{path_name}.guess.log')
+        guess_file = os.path.join(args.log_dir, 
+                                  f'{path_name}.chr12.guess.real.log')
         if not os.path.exists(guess_file):
             # No haplotype sampling occurred; skip
             continue
 
         # Add guesses from logfile
         sampled, guess_cenhap = find_guesses(guess_file)
-        if not sampled:
-            # No haplotype sampling occurred; skip
-            continue
         items_to_write.append(guess_cenhap)
 
         # Look up distances
@@ -350,15 +348,14 @@ def write_data(cenhap_table: Dict[str, str],
         items_to_write += [dist_row[true_closest_hap], 
                            dist_row[closest_sampled_hap]]
 
-        real_truth_node_file = os.path.join(args.reads_dir, 
-                                            f'{path_name}.chr12.hifi.real.tsv')
-        real_truth_nodes = load_truth_nodes(real_truth_node_file)
-        sim_truth_node_file = os.path.join(args.reads_dir, 
-                                            f'{path_name}.chr12.hifi.sim.tsv')
-        sim_truth_nodes = load_truth_nodes(sim_truth_node_file)
+        real_truth_nodes = load_truth_nodes(os.path.join(args.reads_dir, 
+                                            f'{path_name}.chr12.hifi.real.tsv'))
+        sim_truth_nodes = load_truth_nodes(os.path.join(args.reads_dir, 
+                                            f'{path_name}.chr12.hifi.sim.tsv'))
         for aln_group, tsv_infix in ALN_INFIXES.items():
             # Construct inputs for identity/correctness stats
-            aln_tsv_file = f'{args.aln_dir}/{path_name}.{tsv_infix}.tsv'
+            aln_tsv_file = os.path.join(args.aln_dir, 
+                                        f'{path_name}.chr12.{tsv_infix}.tsv')
             is_native = aln_group.startswith('Native')
             if 'real' in aln_group:
                 truth_nodes = real_truth_nodes
@@ -372,7 +369,8 @@ def write_data(cenhap_table: Dict[str, str],
             items_to_write += [identity, correctness]
 
             # Construct inputs for runtime/memory stats
-            aln_log_file = f'{args.aln_dir}/{path_name}.{tsv_infix}.log'
+            aln_log_file = os.path.join(args.aln_dir, 
+                                        f'{path_name}.chr12.{tsv_infix}.log')
             if 'minimap2' in aln_group:
                 runtime, memory = read_runtime_memory_minimap2(aln_log_file)
             else:
@@ -385,6 +383,7 @@ if __name__ == '__main__':
     args = parse_args()
     # Load cross-sample files first
     cenhap_table = read_cenhap_table(args.cenhap_table)
+    cenhap_table['HG00272.1'] = '1'
     dist_matrix = read_distances(args.distances)
     private_nodes = find_private_nodes(args.gfa)
     # Write by-sample data
