@@ -25,6 +25,8 @@ def parse_args() -> argparse.Namespace:
                         help="Hard limit for score drop from top score")
     parser.add_argument("--cenhap-table", type=str, help="Cenhap assignments")
     parser.add_argument("--dist-matrix", type=str, help="Distance matrix")
+    parser.add_argument("--ploidy", type=int, default=1, 
+                        help="Sample ploidy (1 or 2)")
     parser.add_argument("logfile", type=str, help="Logfile to read from")
     return parser.parse_args()
 
@@ -121,8 +123,41 @@ def guess_optimal_n(sampled: List[SampledHaplotype], threshold: int) -> int:
     # Guess we're using all of these
     return len(sampled)
 
+def guess_cenhap(sampled: List[SampledHaplotype], cenhap_table: Dict[str, str],
+                 n_to_use: int, ploidy: int) -> str:
+    """Guess a sample's cenhap.
+    
+    For haploid samples, just use the top sample's cenhap.
+    For diploid samples, keep going down the list until
+    getting two different cenhaps, or report a homozygote.
+    """
+
+    if ploidy == 1:
+        return cenhap_table.get(sampled[0].name)
+    elif ploidy == 2:
+        # Find cenhaps in use
+        cenhaps_sampled = set()
+        for hap in sampled[:n_to_use]:
+            cenhaps_sampled.add(cenhap_table.get(hap.name))
+            if len(cenhaps_sampled) == 2:
+                break
+        
+        # Construct genotype
+        if not cenhaps_sampled:
+            raise ValueError('No cenhaps sampled')
+        elif len(cenhaps_sampled) == 1:
+            cenhap = cenhaps_sampled.pop()
+            return f'{cenhap} / {cenhap}'
+        else:
+            cenhap1 = cenhaps_sampled.pop()
+            cenhap2 = cenhaps_sampled.pop()
+            return f'{cenhap1} / {cenhap2}'
+    
 if __name__ == "__main__":
     args = parse_args()
+
+    if args.ploidy != 1 and args.ploidy != 2:
+        raise ValueError('--ploidy must be 1 or 2')
 
     scores = parse_scores(args.logfile)
     matrix = read_dist_matrix(args.dist_matrix)
@@ -132,6 +167,6 @@ if __name__ == "__main__":
     optimal_n = guess_optimal_n(scores, args.fall_threshold)
     
     cenhap_table = read_cenhap_table(args.cenhap_table)
-    cenhap = cenhap_table.get(scores[0].name)
+    cenhap = guess_cenhap(scores, cenhap_table, optimal_n, args.ploidy)
     
     print(f"Best guess: use {optimal_n} haplotypes & sample cenhap = {cenhap}")
