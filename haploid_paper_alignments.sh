@@ -7,7 +7,7 @@ set -e
 
 # ---- process arguments ----
 
-echo "Top of haploid_paper_alignments.sh with ${1} input"
+echo "Top of haploid_paper_alignments.sh with ${1} ${2} input"
 
 ORIG_PATH_NAME=$1
 CHROM=$2
@@ -176,10 +176,10 @@ echo "====="
 echo "Haplotype sampling on real reads"
 
 kmc -k29 -m128 -okff -t16 -hp ${READS}.real.fastq \
-    $KMER_DIR/${ORIG_PATH_NAME}.real "$KMER_DIR"
+    $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.real "$KMER_DIR"
 
 # Sample 5 haps without alignment, so we can guess ideal # to sample
-vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
@@ -190,7 +190,7 @@ cat ${GUESS_LOG}.real.log
 
 n_to_sample=`fgrep Best ${GUESS_LOG}.real.log | cut -d " " -f4`
 
-vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.real.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
 vg autoindex --prefix $SAMPLED_GRAPH.real --no-guessing \
@@ -204,10 +204,10 @@ echo "====="
 echo "Haplotype sampling on sim reads"
 
 kmc -k29 -m128 -okff -t16 -hp ${READS}.sim.fastq \
-    $KMER_DIR/${ORIG_PATH_NAME}.sim "$KMER_DIR"
+    $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.sim "$KMER_DIR"
 
 # Sample 5 haps without alignment, so we can guess ideal # to sample
-vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.sim.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.sim.log
 
@@ -218,7 +218,7 @@ cat ${GUESS_LOG}.sim.log
 
 n_to_sample=`fgrep Best ${GUESS_LOG}.sim.log | cut -d " " -f4`
 
-vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.sim.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.sim.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
 vg autoindex --prefix $SAMPLED_GRAPH.sim --no-guessing \
