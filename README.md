@@ -47,24 +47,22 @@ Starting from an empty directory and installations of the dependencies:
 is necessary because all haplotypes must participate in the same top-level chain
 for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
 3. Convert to a GBZ and index for haplotype sampling: `gfa_to_gbz_ref.sh`
-4. Perform alignments (currently done with `leave_one_out_alignments.sh`)
-5. Run `guess_optimal_num_sampled_haplo.py` for each haplotype to get *n*.
+4. Extract CHM13 reference from the larger graph: `create_single_path_ref.sh`
+5. Perform alignments (currently done with `haploid_paper_alignments.sh`)
 
-`./slurm.sh`, submitted as a SLURM job (parallelized across haplotypes), should
-guess, for each input haplotype in the first column, that the optimal *n* is as
-in the second column. It also tries to type the cenhap (this is bad).
+`./slurm.sh`, submitted as a SLURM job (parallelized across haplotypes), doing
+all alignments for a particular chromosome.
 
 ## Files
 
 - **Workflow**
     - `add_dummy_caps.py`: modify Centrolign GFAs to input to haplotype sampling
-    - `compare_snvs.py`: compare SNV calls to truth sets
+    - `create_single_path_ref.sh`: extract & index a linear ref from graph
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
     - `guess_n_and_cenhap.py`: guess optimal *n* value and cenhap of input
-    - `leave_one_out_alignments.sh`: run the leave-one-out alignments
-    - `leave_one_out_alignments_diploid.sh`: similar run for diploid samples
+    - `haploid_paper_alignments.sh`: run the alignments
+- **Plotting**
     - `collect_data.py`: calculate stats using all the outputs
-- **Plotting** (in `plot_scripts/`)
     - `plot_identity_and_accuracy.py`: plot ID % and SNV calling across *n*s
     - `plot_variants_vs_dist.py`: four-panel plot for a sample with variant info
 - **Metadata**
