@@ -38,4 +38,4 @@ sample_id=`grep "^P" "$GFA" | cut -f1 -d "#" | sort | uniq -c | fgrep -v "1 P" \
 echo "Running sample: $sample_id"
 
 log=$DIR/log/${sample_id}.typing.log
-$DIR/haploid_paper_alignments.sh $sample_id chr12 &> $log
+$DIR/diploid_paper_typing.sh $sample_id chr12 &> $log
