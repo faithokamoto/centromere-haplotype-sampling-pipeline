@@ -161,9 +161,10 @@ if __name__ == "__main__":
 
     scores = parse_scores(args.logfile)
     matrix = read_dist_matrix(args.dist_matrix)
-    path_name_parts = args.logfile.split("/")[-1].split(".")
-    path_name = f'{path_name_parts[0]}.{path_name_parts[1]}'
-    print_dist_info(matrix, scores, path_name)
+    if args.ploidy == 1:
+        path_name_parts = args.logfile.split("/")[-1].split(".")
+        path_name = f'{path_name_parts[0]}.{path_name_parts[1]}'
+        print_dist_info(matrix, scores, path_name)
     optimal_n = guess_optimal_n(scores, args.fall_threshold)
     
     cenhap_table = read_cenhap_table(args.cenhap_table)

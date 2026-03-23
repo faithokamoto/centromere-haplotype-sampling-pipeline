@@ -1,9 +1,9 @@
 #!/bin/bash
 # Job name:
-#SBATCH --job-name=chr12_centrolign
+#SBATCH --job-name=diploid_type
 #
 # Partition - This is the queue it goes in:
-#SBATCH --partition=medium
+#SBATCH --partition=short
 #
 # Where to send email (optional)
 #SBATCH --mail-user=fokamoto@ucsc.edu
@@ -21,23 +21,21 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=6:00:00
+#SBATCH --time=10:00
 #
 # Array job specification:
-#SBATCH --array=1-21
-
-# Activate Conda environment
-source /private/home/${USER}/.bashrc
-source activate matplotlib
+#SBATCH --array=1-159
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
-line=`head -n $SLURM_ARRAY_TASK_ID $DIR/input_data/test_samples.txt | tail -n 1`
-sample_id=$(echo "$line" | cut -f1 -d "," | cut -f1 -d ".")
+# Activate Conda environment
+source /private/home/${USER}/.bashrc
+source activate cenhap-sample
+
+GFA=/private/groups/patenlab/fokamoto/centrolign/graph/unsampled/chr12.gfa
+sample_id=`grep "^P" "$GFA" | cut -f1 -d "#" | sort | uniq -c | fgrep -v "1 P" \
+    | cut -f2 | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1`
 echo "Running sample: $sample_id"
 
-log=$DIR/log/${sample_id}.log
-$DIR/leave_one_out_alignments_diploid.sh "$sample_id" &> $log
-$DIR/guess_cenhap.py --ploidy 2 --logfile $log &>> $log
-$DIR/plot_scripts/plot_identity_and_accuracy.py \
-    --name $sample_id --logfile $log --output-file $DIR/plot_outputs/${sample_id}.png
+log=$DIR/log/${sample_id}.typing.log
+$DIR/haploid_paper_alignments.sh $sample_id chr12 &> $log
