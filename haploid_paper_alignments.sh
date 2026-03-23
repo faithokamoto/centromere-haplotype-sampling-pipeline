@@ -16,6 +16,7 @@ HAPLO_NUM=`echo "$ORIG_PATH_NAME" | cut -f2 -d "." `
 PATH_NAME="${SAMPLE_ID}#${HAPLO_NUM}#${ORIG_PATH_NAME}#0"
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
+SCRATCH=/scratch/fokamoto
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/$CHROM
 BAM_LOCS=$PROJ_DIR/to_align/aws_file_locations.csv
 MIRA_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2
@@ -68,14 +69,14 @@ if [ ! -f ${READS}.real.fastq ]; then
         exit 1
     fi
     reads=`grep "^$SAMPLE_ID," "$BAM_LOCS" | cut -f3 -d ","` 
-    full_bam=$PROJ_DIR/to_align/${ORIG_PATH_NAME}.bam
+    full_bam=$SCRATCH/${ORIG_PATH_NAME}.bam
     aws s3 --no-sign-request cp "$reads" "$full_bam" &> /dev/null
     echo "Download complete"
     # Subset BAM to only correct-chromosome reads
     grep ${CHROM} ${BED_DIR}/${ORIG_PATH_NAME}_asat_arrays.bed > ${READS}.real.bed
     samtools view -@32 -L ${READS}.real.bed -h "$full_bam" > ${READS}.real.sam
     # Get rid of giant BAM file for space
-    rm $PROJ_DIR/to_align/${ORIG_PATH_NAME}.*bam*
+    rm $SCRATCH/${ORIG_PATH_NAME}.*bam*
     echo "Cleaned up BAM file"
 
     # Edit SAM to something compatible with the graph
