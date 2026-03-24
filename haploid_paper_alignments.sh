@@ -185,7 +185,7 @@ vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.real.kff -i ${BIG_GRAPH}.h
 
 # Use logfile to guess
 ./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" \
-        --dist-matrix $DISTS ${GUESS_LOG}.real.log &>> ${GUESS_LOG}.real.log
+        --dist-matrix "$DISTS" ${GUESS_LOG}.real.log &>> ${GUESS_LOG}.real.log
 cat ${GUESS_LOG}.real.log
 
 n_to_sample=`fgrep Best ${GUESS_LOG}.real.log | cut -d " " -f4`
@@ -213,7 +213,7 @@ vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.sim.kff -i ${BIG_GRAPH}.ha
 
 # Use logfile to guess
 ./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" \
-        --dist-matrix $DISTS ${GUESS_LOG}.sim.log &>> ${GUESS_LOG}.sim.log
+        --dist-matrix "$DISTS" ${GUESS_LOG}.sim.log &>> ${GUESS_LOG}.sim.log
 cat ${GUESS_LOG}.sim.log
 
 n_to_sample=`fgrep Best ${GUESS_LOG}.sim.log | cut -d " " -f4`
