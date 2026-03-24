@@ -34,13 +34,13 @@ cat $READS_DIR/${SAMPLE_ID}.*.${READ_SUFFIX} > $READS_DIR/${SAMPLE_ID}.${READ_SU
 kmc -k29 -m128 -okff -t16 -hp $READS_DIR/${SAMPLE_ID}.${READ_SUFFIX} \
     $KMER_DIR/${SAMPLE_ID}.${CHROM}.real "$KMER_DIR"
 
-# Sample 5 haps without alignment, so we can guess ideal # to sample
+# Sample 10 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${SAMPLE_ID}.${CHROM}.real.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
+    --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
 # Use logfile to guess
-./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" --ploidy 2 \
+./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" --ploidy 2 --fall-threshold 2000 \
         --dist-matrix "$DISTS" ${GUESS_LOG}.real.log &>> ${GUESS_LOG}.real.log
 cat ${GUESS_LOG}.real.log
 
