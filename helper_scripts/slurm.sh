@@ -1,6 +1,6 @@
 #!/bin/bash
 # Job name:
-#SBATCH --job-name=chr12_centrolign
+#SBATCH --job-name=centrolign
 #
 # Partition - This is the queue it goes in:
 #SBATCH --partition=medium
@@ -21,10 +21,10 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=3:00:00
+#SBATCH --time=6:00:00
 #
 # Array job specification:
-#SBATCH --array=1-139%10
+#SBATCH --array=1-139
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
