@@ -41,15 +41,15 @@ Sample-specific inputs:
     "Best guess: use <n> haplotypes & sample cenhap = <cenhap>".
     Also uses lines like "Selected haplotype <name> with score <score>"
     to get the haplotypes sampled in order.
-- Truth read positions (<--reads-dir>/real_<path>.chr12.hifi.tsv).
+- Truth read positions (<--reads-dir>/real_<path>.<chrom>.hifi.tsv).
     Expects columns for read name and then comma-separated nodes.
     The node list is allowed to end with a comma.
     Also expects a header line but it will be skipped.
-- Alignment metadata (<--aln-dir>/<path>.<suffix>.tsv), with ALN_INFIXES.
+- Alignment metadata (<--aln-dir>/<path>.<chrom>.<infix>.tsv).
     Expects columns for read name, identity, and comma-separated nodes.
     The node list is allowed to end with a comma.
     Also expects a header line but it will be skipped.
-- Alignment logs (<--aln-dir>/<path>.<suffix>.log), with ALN_INFIXES.
+- Alignment logs (<--aln-dir>/<path>.<chrom>.<infix>.log).
     For Minimap2 logs, pulls CPU time Y and memory Z from lines like
         [M::main] Real time: X sec; CPU: Y sec; Peak RSS: Z GB
     For Giraffe logs, pulls CPU time Y and memory Z from lines like
@@ -99,6 +99,7 @@ ALN_INFIXES = {f'{long_ref} {tool} {real}' : f'{short_ref}.{real}.{tool}'
 def parse_args() -> argparse.Namespace:
     """Handle command-line argument parsing."""
     parser = argparse.ArgumentParser()
+    parser.add_argument('-C', '--chrom', help='Chromosome to get data for')
     parser.add_argument('-c', '--cenhap-table',
                         help='TSV of truth cenhap assignments')
     parser.add_argument('-d', '--distances',
@@ -314,7 +315,8 @@ def read_runtime_memory_giraffe(log_file: str) -> Tuple[float, float]:
         raise RuntimeError(f'No runtime/memory usage line in {log_file}')
     return runtime, memory
 
-def write_data(cenhap_table: Dict[str, str], 
+def write_data(chrom: str,
+               cenhap_table: Dict[str, str], 
                dist_matrix: Dict[str, Dict[str, float]],
                private_nodes: Dict[str, Set[str]]) -> None:
     """Write the output TSV (see file docstring)."""
@@ -330,7 +332,7 @@ def write_data(cenhap_table: Dict[str, str],
         items_to_write = [path_name, truth_cenhap]
         
         guess_file = os.path.join(args.log_dir, 
-                                  f'{path_name}.chr12.guess.real.log')
+                                  f'{path_name}.{chrom}.guess.real.log')
         if not os.path.exists(guess_file):
             # No haplotype sampling occurred; skip
             continue
@@ -349,13 +351,13 @@ def write_data(cenhap_table: Dict[str, str],
                            dist_row[closest_sampled_hap]]
 
         real_truth_nodes = load_truth_nodes(os.path.join(args.reads_dir, 
-                                            f'{path_name}.chr12.hifi.real.tsv'))
+                                            f'{path_name}.{chrom}.hifi.real.tsv'))
         sim_truth_nodes = load_truth_nodes(os.path.join(args.reads_dir, 
-                                            f'{path_name}.chr12.hifi.sim.tsv'))
+                                            f'{path_name}.{chrom}.hifi.sim.tsv'))
         for aln_group, tsv_infix in ALN_INFIXES.items():
             # Construct inputs for identity/correctness stats
             aln_tsv_file = os.path.join(args.aln_dir, 
-                                        f'{path_name}.chr12.{tsv_infix}.tsv')
+                                        f'{path_name}.{chrom}.{tsv_infix}.tsv')
             is_native = aln_group.startswith('Native')
             if 'real' in aln_group:
                 truth_nodes = real_truth_nodes
@@ -370,7 +372,7 @@ def write_data(cenhap_table: Dict[str, str],
 
             # Construct inputs for runtime/memory stats
             aln_log_file = os.path.join(args.aln_dir, 
-                                        f'{path_name}.chr12.{tsv_infix}.log')
+                                        f'{path_name}.{chrom}.{tsv_infix}.log')
             if 'minimap2' in aln_group:
                 runtime, memory = read_runtime_memory_minimap2(aln_log_file)
             else:
@@ -383,8 +385,7 @@ if __name__ == '__main__':
     args = parse_args()
     # Load cross-sample files first
     cenhap_table = read_cenhap_table(args.cenhap_table)
-    cenhap_table['HG00272.1'] = '1'
     dist_matrix = read_distances(args.distances)
     private_nodes = find_private_nodes(args.gfa)
     # Write by-sample data
-    write_data(cenhap_table, dist_matrix, private_nodes)
+    write_data(args.chrom, cenhap_table, dist_matrix, private_nodes)
