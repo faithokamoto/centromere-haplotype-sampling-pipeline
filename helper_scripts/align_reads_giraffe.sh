@@ -5,14 +5,16 @@
 #                                 HG00408_pat_and_HG00099_hap1_chr12_hor_array.hifi.fastq \
 #                                 diploid_subsets/HG00408_pat_and_HG00099_hap1_chr12_hor_array.hifi.chm13.giraffe
 
-PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 GRAPH=$1
 READS=$2
 OUT=$3
 
-vg giraffe --progress -b hifi --fastq-in $READS --gbz-name $GRAPH -t 20 > $OUT.gam 2> $OUT.log
-vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
-# Irrelevant now since we have the TSV
-rm $OUT.gam
+# Only bother if needed
+if [ ! -f $OUT.tsv ]; then
+    vg giraffe --progress -b hifi --fastq-in $READS --gbz-name $GRAPH -t 20 > $OUT.gam 2> $OUT.log
+    vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
+    # Irrelevant now since we have the TSV
+    rm $OUT.gam
+fi
 
 awk '{sum += $2} END {print "Average identity:", sum / (NR - 1)}' $OUT.tsv
