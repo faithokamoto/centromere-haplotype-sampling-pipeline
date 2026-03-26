@@ -4,14 +4,14 @@
 == Inputs ==
 
 - GFA file with haplotype paths (--gfa).
-    Expects all paths as P lines; ignores all other lines.
+    Expects all haplotypes as P lines; ignores all other lines.
     The node list is allowed to end with a comma.
     https://gfa-spec.github.io/GFA-spec/GFA1.html
-- Truth read positions (--truth-tsv).
+- Truth read positions (<--reads-dir>/<chrom>.<hap>.<realness>.tsv).
     Expects columns for read name and then comma-separated nodes.
     The node list is allowed to end with a comma.
     Also expects a header line but it will be skipped.
-- Alignment metadata (--aln-tsv).
+- Alignment metadata (<--aln-dir>/<chrom>.<hap>.<ref>.<realness>.<tool>.tsv).
     Expects columns for read name, identity, and comma-separated nodes.
     The node list is allowed to end with a comma.
     Also expects a header line but it will be skipped.
@@ -30,20 +30,33 @@ private sequence, and the alignment overlaps 80 of the rest, then it has
     100% * 80 / (150 - 50) = 100% * 80 / 100 = 80% correctness
 
 Orientation is ignored, and partial coverage is counted as full.
+
+The only variation to this formula occurs for "native hap" alignments,
+where as the haplotype was not removed, the private nodes are also required.
 """
 
 import argparse # Command line argument parsing
+import os # Filesystem interactions
 from typing import Dict, Set # Type hints
+
+REFS = [('CHM13', 'chm13'), 
+        ('Neighbor', 'neighbor'), 
+        ('Sampled', 'sampled'), 
+        ('Native hap', 'own_hap')]
+"""References used in alignments."""
+REALNESS = ['real', 'sim']
+"""Possible levels of realness."""
+ALIGNERS = ['minimap2', 'giraffe']
+"""Names of aligners used."""
 
 def parse_args() -> argparse.Namespace:
     """Handle command-line argument parsing."""
     parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--chrom', help='Chromosome (in filenames)')
     parser.add_argument('-g', '--gfa', help='GFA file with path nodes')
-    parser.add_argument('-p', '--path-name', help='Path reads are from')
-    parser.add_argument('-t', '--truth-tsv', help='Truth nodes for reads')
-    parser.add_argument('-a', '--aln-tsv', help='Aligned nodes for reads')
-    parser.add_argument('-r', '--require-private', action='store_true',
-                        help='Correctness calculations use private nodes')
+    parser.add_argument('-n', '--hap-name', help='Haplotype reads are from')
+    parser.add_argument('-r', '--reads-dir', help='Directory with truth TSVs')
+    parser.add_argument('-a', '--aln-dir', help='Directory with aligments')
     return parser.parse_args()
 
 def parse_node_list(node_str: str) -> Set[int]:
@@ -51,10 +64,10 @@ def parse_node_list(node_str: str) -> Set[int]:
     return {int(node.rstrip('+-')) for node 
             in node_str.strip().split(',') if node}
 
-def find_private_nodes(gfa_file: str, path_name: str) -> Set[int]:
-    """Use GFA file to find nodes private to a path."""
-    on_this_path = set()
-    on_other_paths = set()
+def find_private_nodes(gfa_file: str, hap_name: str) -> Set[int]:
+    """Use GFA file to find nodes private to a haplotype."""
+    on_this_hap = set()
+    on_other_haps = set()
 
     with open(gfa_file) as f:
         for line in f:
@@ -62,17 +75,17 @@ def find_private_nodes(gfa_file: str, path_name: str) -> Set[int]:
                 continue
 
             parts = line.rstrip().split()
-            # Extract contig name from <sample ID>#<hap num>#<contig>
-            cur_path_name = parts[1].split('#')[-1]
+            # Extract hap name from <sample ID>#<hap num>#<contig>
+            cur_hap_name = parts[1].split('#')[-1]
             nodes = parse_node_list(parts[2])
 
-            if cur_path_name == path_name:
-                on_this_path = nodes
+            if cur_hap_name == hap_name:
+                on_this_hap = nodes
             else:
-                on_other_paths |= nodes
+                on_other_haps |= nodes
     
     # Subset to only private nodes
-    return (on_this_path - on_other_paths)
+    return (on_this_hap - on_other_haps)
 
 def load_truth_nodes(read_tsv: str) -> Dict[str, Set[int]]:
     """Load the truth node positions for read set.
@@ -135,11 +148,27 @@ def calc_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
             else:
                 raise ValueError(f'No nodes in line from {aln_tsv_file}')
 
-    print(f'mean identity = {sum(identity) / len(identity)} and '
-          f'mean correctness = {sum(correctness) / len(correctness)}')
+    print(f'{aln_tsv_file}: mean identity = {sum(identity) / len(identity)}'
+          f' and mean correctness = {sum(correctness) / len(correctness)}')
 
 if __name__ == '__main__':
     args = parse_args()
-    private_nodes = find_private_nodes(args.gfa, args.path_name)
-    truth_nodes = load_truth_nodes(args.truth_tsv)
-    calc_aln_stats(truth_nodes, private_nodes, args.aln_tsv, args.require_private)
+    # Needed across alignment files
+    private_nodes = find_private_nodes(args.gfa, args.hap_name)
+    
+    for realness in ['real', 'sim']:
+        # Needed across alignment files of a realness
+        truth_nodes = load_truth_nodes(os.path.join(args.reads_dir, 
+                                f'{args.chrom}.{args.hap_name}.{realness}.tsv'))
+        
+        for tool in ['minimap2', 'giraffe']:
+            for ref in ['chm13', 'neighbor', 'sampled', 'own_hap']:
+                if tool == 'minimap2' and ref == 'sampled':
+                    # Minimap2 can't do graph alignments
+                    continue
+
+                # Only alignments to a matched assembly must use private nodes
+                req_private = (ref == 'own_hap')
+                aln_tsv = os.path.join(args.aln_dir, 
+                    f'{args.chrom}.{args.hap_name}.{ref}.{realness}.{tool}.tsv')
+                calc_aln_stats(truth_nodes, private_nodes, aln_tsv, req_private)
