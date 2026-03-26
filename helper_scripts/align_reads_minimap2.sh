@@ -9,14 +9,10 @@ REF=$1
 READS=$2
 OUT=$3
 
-minimap2 -ax map-hifi -t 32 ${REF}.mmi "$READS" > $OUT.sam 2> $OUT.log
+time -v minimap2 -ax map-hifi -t 20 ${REF}.mmi "$READS" > $OUT.sam 2> $OUT.log
 # Filter out secondary/supplementary alignments before converting to BAM
 samtools view -b -F 256 -F 2048 $OUT.sam > $OUT.bam
 
 # Pull vg's identity statistic
 vg inject -x ${REF}.gbz --add-identity $OUT.bam > $OUT.gam
 vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
-# Irrelevant now since we have the TSV
-rm $OUT.sam $OUT.bam $OUT.gam
-
-awk '{sum += $2} END {print "Average identity:", sum / (NR - 1)}' $OUT.tsv
