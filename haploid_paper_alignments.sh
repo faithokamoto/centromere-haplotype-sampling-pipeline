@@ -53,20 +53,20 @@ echo "====="
 echo "Linear reference alignments for real reads"
 
 # align to own haplotype
-./helper_scripts/align_reads_minimap2.sh ${OWN_HAP_GRAPH}.mmi \
-    ${OWN_HAP_GRAPH}.gbz ${READS}.real.fastq ${OWN_HAP_ALN}.real.minimap2
+./helper_scripts/align_reads_minimap2.sh "$OWN_HAP_GRAPH" \
+    ${READS}.real.fastq ${OWN_HAP_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${OWN_HAP_GRAPH}.gbz \
     ${READS}.real.fastq ${OWN_HAP_ALN}.real.giraffe
 
 # align to CHM13
-./helper_scripts/align_reads_minimap2.sh ${CHM13_GRAPH}.mmi \
-    ${CHM13_GRAPH}.gbz ${READS}.real.fastq ${CHM13_ALN}.real.minimap2
+./helper_scripts/align_reads_minimap2.sh "$CHM13_GRAPH" \
+    ${READS}.real.fastq ${CHM13_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${CHM13_GRAPH}.gbz \
     ${READS}.real.fastq ${CHM13_ALN}.real.giraffe
 
 # align to nearest neighbor
-./helper_scripts/align_reads_minimap2.sh ${NEIGHBOR_GRAPH}.mmi \
-    ${NEIGHBOR_GRAPH}.gbz ${READS}.real.fastq ${NEIGHBOR_ALN}.real.minimap2
+./helper_scripts/align_reads_minimap2.sh "$NEIGHBOR_GRAPH" \
+    ${READS}.real.fastq ${NEIGHBOR_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${NEIGHBOR_GRAPH}.gbz \
     ${READS}.real.fastq ${NEIGHBOR_ALN}.real.giraffe
 
@@ -76,20 +76,20 @@ echo "====="
 echo "Linear reference alignments for sim reads"
 
 # align to own haplotype
-./helper_scripts/align_reads_minimap2.sh ${OWN_HAP_GRAPH}.mmi \
-    ${OWN_HAP_GRAPH}.gbz ${READS}.sim.fastq ${OWN_HAP_ALN}.sim.minimap2
+./helper_scripts/align_reads_minimap2.sh "$OWN_HAP_GRAPH" \
+    ${READS}.sim.fastq ${OWN_HAP_ALN}.sim.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${OWN_HAP_GRAPH}.gbz \
     ${READS}.sim.fastq ${OWN_HAP_ALN}.sim.giraffe
 
 # align to CHM13
-./helper_scripts/align_reads_minimap2.sh ${CHM13_GRAPH}.mmi \
-    ${CHM13_GRAPH}.gbz ${READS}.sim.fastq ${CHM13_ALN}.sim.minimap2
+./helper_scripts/align_reads_minimap2.sh "$CHM13_GRAPH" \
+    ${READS}.sim.fastq ${CHM13_ALN}.sim.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${CHM13_GRAPH}.gbz \
     ${READS}.sim.fastq ${CHM13_ALN}.sim.giraffe
 
 # align to nearest neighbor
-./helper_scripts/align_reads_minimap2.sh ${NEIGHBOR_GRAPH}.mmi \
-    ${NEIGHBOR_GRAPH}.gbz ${READS}.sim.fastq ${NEIGHBOR_ALN}.sim.minimap2
+./helper_scripts/align_reads_minimap2.sh "$NEIGHBOR_GRAPH \
+    ${READS}.sim.fastq ${NEIGHBOR_ALN}.sim.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${NEIGHBOR_GRAPH}.gbz \
     ${READS}.sim.fastq ${NEIGHBOR_ALN}.sim.giraffe
 
