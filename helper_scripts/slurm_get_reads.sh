@@ -24,7 +24,7 @@
 #SBATCH --time=3:00:00
 #
 # Array job specification:
-#SBATCH --array=2-232
+#SBATCH --array=2-232%50
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
