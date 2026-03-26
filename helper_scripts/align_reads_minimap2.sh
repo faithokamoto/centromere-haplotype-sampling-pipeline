@@ -11,17 +11,14 @@ GRAPH=$2
 READS=$3
 OUT=$4
 
-# Only bother if needed
-if [ ! -f $OUT.tsv ]; then
-    minimap2 -ax map-hifi -t 20 "$INDEX" "$READS" > $OUT.sam 2> $OUT.log
-    # Filter out secondary/supplementary alignments before converting to BAM
-    samtools view -b -F 256 -F 2048 $OUT.sam > $OUT.bam
+minimap2 -ax map-hifi -t 32 "$INDEX" "$READS" > $OUT.sam 2> $OUT.log
+# Filter out secondary/supplementary alignments before converting to BAM
+samtools view -b -F 256 -F 2048 $OUT.sam > $OUT.bam
 
-    # Pull vg's identity statistic
-    vg inject -x "$GRAPH" --add-identity $OUT.bam > $OUT.gam
-    vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
-    # Irrelevant now since we have the TSV
-    rm $OUT.sam $OUT.bam $OUT.gam
-fi
+# Pull vg's identity statistic
+vg inject -x "$GRAPH" --add-identity $OUT.bam > $OUT.gam
+vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
+# Irrelevant now since we have the TSV
+rm $OUT.sam $OUT.bam $OUT.gam
 
 awk '{sum += $2} END {print "Average identity:", sum / (NR - 1)}' $OUT.tsv

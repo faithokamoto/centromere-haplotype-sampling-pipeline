@@ -9,12 +9,9 @@ GRAPH=$1
 READS=$2
 OUT=$3
 
-# Only bother if needed
-if [ ! -f $OUT.tsv ]; then
-    vg giraffe --progress -b hifi --fastq-in $READS --gbz-name $GRAPH -t 20 > $OUT.gam 2> $OUT.log
-    vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
-    # Irrelevant now since we have the TSV
-    rm $OUT.gam
-fi
+vg giraffe --progress -b hifi --fastq-in $READS --gbz-name $GRAPH -t 32 > $OUT.gam 2> $OUT.log
+vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
+# Irrelevant now since we have the TSV
+rm $OUT.gam
 
 awk '{sum += $2} END {print "Average identity:", sum / (NR - 1)}' $OUT.tsv
