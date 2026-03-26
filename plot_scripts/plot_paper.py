@@ -24,9 +24,9 @@ def read_tsv(path: str):
         for r in reader:
             row = dict(r)
             for k in r:
-                # Try to number-fy the non-cenhap cols
-                # (cenhaps need to be raw)
-                if not k.endswith('cenhap'):
+                if k.endswith('cenhap'):
+                    row[k] = int(r[k])
+                else:
                     try:
                         row[k] = float(r[k])
                     except:
@@ -35,11 +35,11 @@ def read_tsv(path: str):
 
     return rows, header
 
-def group_by_cenhap(rows: dict) -> dict:
+def group_by(rows: dict, col: str) -> dict:
     """Organize rows by their truth cenhap"""
     groups = dict()
     for r in rows:
-        cenhap = r['Truth cenhap']
+        cenhap = r[col]
         if not cenhap in groups:
             groups[cenhap] = list()
         groups[cenhap].append(r)
@@ -88,40 +88,43 @@ def grouped_violin(ax: plt.Axes, cenhaps: list, data_dict: dict,
 
 def make_heatmap(ax: plt.Axes, rows: dict):
     """Plot heatmap of cenhap typing accuracy."""
-    truth = sorted({r['Truth cenhap'] for r in rows})
-    guess = sorted({r['Guessed cenhap'] for r in rows})
+    # UNION of all labels → ensures square matrix with same axes
+    labels = sorted({r['Truth cenhap'] for r in rows} | {r['Guessed cenhap'] for r in rows})
+    index = {v: i for i, v in enumerate(labels)}
 
-    t_index = {v: i for i, v in enumerate(truth)}
-    g_index = {v: i for i, v in enumerate(guess)}
-
-    counts = np.zeros((len(truth), len(guess)))
+    counts = np.zeros((len(labels), len(labels)))
 
     for r in rows:
-        counts[t_index[r['Truth cenhap']], g_index[r['Guessed cenhap']]] += 1
+        counts[index[r['Truth cenhap']], index[r['Guessed cenhap']]] += 1
 
+    # Normalize row-wise
     norm = counts.copy()
-    for i in range(len(truth)):
+    for i in range(len(labels)):
         s = counts[i].sum()
         if s > 0:
             norm[i] /= s
 
-    im = ax.imshow(norm, cmap='viridis')
+    im = ax.imshow(norm, cmap='viridis', vmin=0, vmax=1)
 
-    for i in range(len(truth)):
-        for j in range(len(guess)):
+    # annotate counts
+    for i in range(len(labels)):
+        for j in range(len(labels)):
             if counts[i, j] > 0:
-                ax.text(j, i, int(counts[i, j]), ha='center', va='center', 
-                        backgroundcolor='white', color='black')
+                ax.text(
+                    j, i, int(counts[i, j]),
+                    ha='center', va='center',
+                    backgroundcolor='white', color='black'
+                )
 
-    ax.set_xticks(range(len(guess)))
-    ax.set_xticklabels(guess, rotation=45, ha='right')
-    ax.set_yticks(range(len(truth)))
-    ax.set_yticklabels(truth)
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=45, ha='right')
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels)
 
-    ax.set_xlabel('Guessed cenhap')
-    ax.set_ylabel('Truth cenhap')
+    ax.set_xlabel('Guessed cenhap pair')
+    ax.set_ylabel('True cenhap pair')
 
-    ax.set_box_aspect(1)  # make square
+    ax.set_box_aspect(1)
 
     return im
 
@@ -164,7 +167,7 @@ def fig5(rows, header, outdir):
 
     filt = [r for r in rows if r["Minimum graph distance"] < 0.2]
 
-    groups = group_by_cenhap(filt)
+    groups = group_by(filt, 'Chromosome')
     cenhaps = sorted(groups.keys())
 
     id_cols = filter_columns(header, 'identity', True, False)
@@ -182,7 +185,7 @@ def fig5(rows, header, outdir):
     axB = fig.add_subplot(gs[0, 1])
     axC = fig.add_subplot(gs[1, 1])
 
-    make_heatmap(axA, rows)
+    make_heatmap(axA, [r for r in rows if r["Chromosome"] == 'chr12'])
 
     grouped_violin(axB, cenhaps, id_data, id_cols, colors)
     axB.set_ylabel("Identity")
@@ -201,47 +204,60 @@ def fig5(rows, header, outdir):
     fig.savefig(os.path.join(outdir, "fig5.png"), dpi=300)
     plt.close(fig)
 
+def sup_haploid_heatmaps(rows, outdir):
+    groups = group_by([r for r in rows], 'Chromosome')
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 6))
+
+    for i, chrom in enumerate(sorted(groups.keys())):
+        make_heatmap(axs[i], groups[chrom])
+        axs[i].set_title(chrom)
+
+    fig.tight_layout()
+    fig.savefig(os.path.join(outdir, "sup_haploids.png"), dpi=300)
+    plt.close(fig)
+
 
 def sup_violin(rows, header, outdir, real, name, dist_filter):
-
     subset = [r for r in rows if dist_filter(r["Minimum graph distance"])]
+    chrom_groups = group_by(subset, 'Chromosome')
 
-    groups = group_by_cenhap(subset)
-    cenhaps = sorted(groups.keys())
-
-    id_cols = filter_columns(header, 'identity', real, True)
-    cor_cols = filter_columns(header, 'correctness', real, True)
-    runtime_cols = filter_columns(header, 'runtime', real, True)
-    memory_cols = filter_columns(header, 'memory', real, True)
-
-    id_data = collect_metric(groups, cenhaps, id_cols)
-    cor_data = collect_metric(groups, cenhaps, cor_cols)
-    runtime_data = collect_metric(groups, cenhaps, runtime_cols)
-    memory_data = collect_metric(groups, cenhaps, memory_cols)
-
-    colors = plt.cm.tab20.colors[:len(id_cols)+1]
+    colors = plt.cm.tab20.colors[:8]
     colors = colors[:5] + colors[6:]
 
-    fig, axs = plt.subplots(2, 2, figsize=(20, 6), sharex=True)
+    fig, axs = plt.subplots(nrows=4, ncols=len(chrom_groups), figsize=(20, 6))
+    
+    for i, chrom in enumerate(sorted(chrom_groups.keys())):
+        cenhap_groups = group_by(chrom_groups[chrom], 'Truth cenhap')
+        cenhaps = sorted(cenhap_groups.keys())
 
-    grouped_violin(axs[0][0], cenhaps, runtime_data, runtime_cols, colors)
+        id_cols = filter_columns(header, 'identity', real, True)
+        cor_cols = filter_columns(header, 'correctness', real, True)
+        runtime_cols = filter_columns(header, 'runtime', real, True)
+        memory_cols = filter_columns(header, 'memory', real, True)
+
+        id_data = collect_metric(cenhap_groups, cenhaps, id_cols)
+        cor_data = collect_metric(cenhap_groups, cenhaps, cor_cols)
+        runtime_data = collect_metric(cenhap_groups, cenhaps, runtime_cols)
+        memory_data = collect_metric(cenhap_groups, cenhaps, memory_cols)
+
+        grouped_violin(axs[0][i], cenhaps, runtime_data, runtime_cols, colors)
+        grouped_violin(axs[1][i], cenhaps, memory_data, memory_cols, colors)
+        grouped_violin(axs[2][i], cenhaps, id_data, id_cols, colors)
+        grouped_violin(axs[3][i], cenhaps, cor_data, cor_cols, colors)
+
+        axs[0][i].set_title(chrom)
+        axs[3][i].set_xlabel('Truth cenhap')
+
+    
     axs[0][0].set_ylabel("Runtime", fontsize=13)
-
-    grouped_violin(axs[0][1], cenhaps, memory_data, memory_cols, colors)
-    axs[0][1].set_ylabel("Memory", fontsize=13)
-
-    grouped_violin(axs[1][0], cenhaps, id_data, id_cols, colors)
-    axs[1][0].set_ylabel("Identity", fontsize=13)
-    axs[1][0].set_xlabel("Truth cenhap", fontsize=13)
-
-    grouped_violin(axs[1][1], cenhaps, cor_data, cor_cols, colors)
-    axs[1][1].set_ylabel("Correctness", fontsize=13)
-    axs[1][1].set_xlabel("Truth cenhap", fontsize=13)
-
+    axs[1][0].set_ylabel("Memory", fontsize=13)
+    axs[2][0].set_ylabel("Identity", fontsize=13)
+    axs[3][0].set_ylabel("Correctness", fontsize=13)
     panel_letter(axs[0][0], "a")
-    panel_letter(axs[0][1], "b")
-    panel_letter(axs[1][0], "c")
-    panel_letter(axs[1][1], "d")
+    panel_letter(axs[1][0], "b")
+    panel_letter(axs[2][0], "c")
+    panel_letter(axs[3][0], "d")
 
     legend_from_columns(fig, id_cols, colors)
 
@@ -337,3 +353,5 @@ if __name__ == '__main__':
     sup_dists(rows, args.output_dir)
 
     sup_correctness(rows, args.output_dir)
+
+    sup_haploid_heatmaps(rows, args.output_dir)
