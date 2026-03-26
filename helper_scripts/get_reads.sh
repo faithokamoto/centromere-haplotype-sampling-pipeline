@@ -15,7 +15,7 @@ mkdir -p $SAMPLE_TMP
 
 reads=`grep "^$SAMPLE_ID," "$PROJ_DIR/to_align/aws_file_locations.csv" | cut -f3 -d ","`
 echo "Downloading reads for $SAMPLE_ID from AWS"
-aws s3 --no-sign-request cp "$reads" $SAMPLE_TMP/full.bam 2> /dev/null
+aws s3 --no-sign-request cp "$reads" $SAMPLE_TMP/full.bam &> /dev/null
 echo "Download complete"
 
 for hap_num in 1 2; do
