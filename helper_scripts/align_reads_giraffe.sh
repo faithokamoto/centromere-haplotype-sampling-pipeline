@@ -9,5 +9,5 @@ GRAPH=$1
 READS=$2
 OUT=$3
 
-time -v vg giraffe --progress -b hifi --fastq-in $READS --gbz-name $GRAPH -t 20 > $OUT.gam 2> $OUT.log
+/usr/bin/time -v vg giraffe --progress -b hifi --fastq-in $READS --gbz-name $GRAPH -t 20 > $OUT.gam 2> $OUT.log
 vg filter --tsv-out "name;identity;nodes" $OUT.gam > $OUT.tsv
