@@ -88,7 +88,7 @@ echo "Linear reference alignments for sim reads"
     ${READS}.sim.fastq ${CHM13_ALN}.sim.giraffe
 
 # align to nearest neighbor
-./helper_scripts/align_reads_minimap2.sh "$NEIGHBOR_GRAPH \
+./helper_scripts/align_reads_minimap2.sh "$NEIGHBOR_GRAPH" \
     ${READS}.sim.fastq ${NEIGHBOR_ALN}.sim.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${NEIGHBOR_GRAPH}.gbz \
     ${READS}.sim.fastq ${NEIGHBOR_ALN}.sim.giraffe
