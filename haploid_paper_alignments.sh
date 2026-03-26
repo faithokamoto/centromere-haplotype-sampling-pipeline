@@ -23,7 +23,7 @@ BED_DIR=$MIRA_DIR/per_smp_asat_beds
 DISTS=$MIRA_DIR/all_pairs/distance_matrices/${CHROM}_r2_QC_v2_centrolign_pairwise_distance.csv
 CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/${CHROM}/${CHROM}.cenhap_predictions.tsv
 
-READS=$PROJ_DIR/to_align/${ORIG_PATH_NAME}.${CHROM}.hifi
+READS=$PROJ_DIR/to_align/${CHROM}.${ORIG_PATH_NAME}
 
 GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
@@ -31,98 +31,21 @@ KMER_DIR=$PROJ_DIR/to_align/kmers/$ORIG_PATH_NAME
 
 mkdir -p $KMER_DIR
 
-CHM13_GRAPH=$GRAPH_DIR/chm13.${CHROM}asat
-OWN_HAP_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.own_hap
-NEIGHBOR_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.neighbor
-SAMPLED_GRAPH=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.sampled
-
-OWN_HAP_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.own_hap
-NEIGHBOR_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.neighbor
-CHM13_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.chm13
-SAMPLED_ALN=$ALN_DIR/${ORIG_PATH_NAME}.${CHROM}.sampled
-
-GUESS_LOG=$GRAPH_DIR/${ORIG_PATH_NAME}.${CHROM}.guess
-
-# ---- make extra references ----
-
-# native ref
-./helper_scripts/create_single_path_ref.sh ${BIG_GRAPH}.pg "$PATH_NAME" "$OWN_HAP_GRAPH"
-
-# Nearest neighbor
 nearest_neighbor=`grep "$ORIG_PATH_NAME" "$DISTS" | sed 's/,/\t/g' | sort -k3 -n | head -1 \
     | cut -f1-2 | tr "\t" "\n" | grep -v "$ORIG_PATH_NAME"`
-neighbor_sample_id=`echo $nearest_neighbor | cut -f1 -d "."`
-neighbor_haplo_num=`echo $nearest_neighbor | cut -f2 -d "."`
-neighbor_path_name="${neighbor_sample_id}#${neighbor_haplo_num}#${nearest_neighbor}#0"
-echo "Nearest neighbor: $neighbor_path_name"
+echo "Nearest neighbor: $nearest_neighbor"
 
-./helper_scripts/create_single_path_ref.sh ${BIG_GRAPH}.pg "$neighbor_path_name" "$NEIGHBOR_GRAPH"
+CHM13_GRAPH=$GRAPH_DIR/${CHROM}.chm13
+OWN_HAP_GRAPH=$GRAPH_DIR/${CHROM}.${ORIG_PATH_NAME}
+NEIGHBOR_GRAPH=$GRAPH_DIR/${CHROM}.${nearest_neighbor}
+SAMPLED_GRAPH=$GRAPH_DIR/${CHROM}.${ORIG_PATH_NAME}.sampled
 
-# ---- get reads to align ----
+OWN_HAP_ALN=$ALN_DIR/${CHROM}.${ORIG_PATH_NAME}.own_hap
+NEIGHBOR_ALN=$ALN_DIR/${CHROM}.${ORIG_PATH_NAME}.neighbor
+CHM13_ALN=$ALN_DIR/${CHROM}.${ORIG_PATH_NAME}.chm13
+SAMPLED_ALN=$ALN_DIR/${CHROM}.${ORIG_PATH_NAME}.sampled
 
-if [ ! -f ${READS}.real.fastq ]; then
-    # Download reads
-    echo "Downloading reads for $ORIG_PATH_NAME from AWS"
-    if [ `grep -L "^$SAMPLE_ID," "$BAM_LOCS" | wc -l` -eq 1 ]; then
-        echo "ERROR: Could not find reads for $ORIG_PATH_NAME"
-        exit 1
-    fi
-    reads=`grep "^$SAMPLE_ID," "$BAM_LOCS" | cut -f3 -d ","` 
-    full_bam=$TMPDIR/${ORIG_PATH_NAME}.bam
-    aws s3 --no-sign-request cp "$reads" "$full_bam" &> /dev/null
-    echo "Download complete"
-    # Subset BAM to only correct-chromosome reads
-    grep ${CHROM} ${BED_DIR}/${ORIG_PATH_NAME}_asat_arrays.bed > ${READS}.real.bed
-    samtools view -@32 -L ${READS}.real.bed -h "$full_bam" > ${READS}.real.sam
-    # Get rid of giant BAM file for space
-    rm $TMPDIR/${ORIG_PATH_NAME}.*bam*
-    echo "Cleaned up BAM file"
-
-    # Edit SAM to something compatible with the graph
-    old_path_name=`cut -f1 ${READS}.real.bed`
-    start=`cut -f2 ${READS}.real.bed`
-    end=`cut -f3 ${READS}.real.bed`
-    new_path_name=`echo $PATH_NAME | sed 's/#0//g'`
-    samtools view ${READS}.real.sam | sed "s/$old_path_name/$new_path_name/" > ${READS}.real.no_header.sam
-    samtools view -H ${READS}.real.sam | sed "s/$old_path_name/$new_path_name/" > ${READS}.real.header
-    # Filter for reads which appear within the BED file's boundaries
-    # while also editing the coordinates to be graph-friendly
-    ./helper_scripts/edit_sam.py --start "$start" --end "$end" \
-        ${READS}.real.no_header.sam > ${READS}.real.edited.sam
-    cat ${READS}.real.header ${READS}.real.edited.sam > ${READS}.real.combined.sam
-    
-    # Get truth positions
-    vg inject -x ${OWN_HAP_GRAPH}.gbz ${READS}.real.combined.sam > ${READS}.real.gam
-    vg filter --tsv-out "name;nodes" ${READS}.real.gam > ${READS}.real.tsv
-    # Convert to FASTQ
-    vg view --fastq-out ${READS}.real.gam > ${READS}.real.fastq
-
-    # Clean up memory; we only need FASTQ files & the nodes TSV
-    rm -f ${READS}.real.bed ${READS}.real.sam ${READS}.real.no_header.sam ${READS}.real.header
-    rm -f ${READS}.real.edited.sam ${READS}.real.combined.sam ${READS}.real.gam
-fi
-
-if [ ! -f ${READS}.real.fastq ]; then
-    echo "Failed to create a FASTQ file"
-    exit 1
-fi
-
-if [ ! -s ${READS}.real.fastq ]; then
-    echo "FASTQ file is empty"
-    exit 1
-fi
-
-# Generate similar simulated reads
-num_reads=`grep -c "^@" ${READS}.real.fastq`
-vg sim -x ${OWN_HAP_GRAPH}.gbz --num-reads "$num_reads" \
-     --random-seed 42 --threads 20 --fastq ${READS}.real.fastq \
-     --align-out --use-average-length > ${READS}.sim.gam
-vg filter --tsv-out "name;nodes" ${READS}.sim.gam > ${READS}.sim.tsv
-# Convert to FASTQ
-vg view --fastq-out ${READS}.sim.gam > ${READS}.sim.fastq
-
-# Clean up memory; we only need FASTQ files & the nodes TSV
-rm -f ${READS}.sim.gam
+GUESS_LOG=$GRAPH_DIR/${CHROM}.${ORIG_PATH_NAME}.guess
 
 # ---- basic alignments (real reads) ----
 
@@ -193,7 +116,7 @@ n_to_sample=`fgrep Best ${GUESS_LOG}.real.log | cut -d " " -f4`
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.real.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
-vg autoindex --prefix $SAMPLED_GRAPH.real --no-guessing \
+vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.real.gbz 2> /dev/null
 
 ./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz ${READS}.real.fastq ${SAMPLED_ALN}.real.giraffe
@@ -221,7 +144,7 @@ n_to_sample=`fgrep Best ${GUESS_LOG}.sim.log | cut -d " " -f4`
 vg haplotypes -k $KMER_DIR/${ORIG_PATH_NAME}.${CHROM}.sim.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.sim.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
-vg autoindex --prefix $SAMPLED_GRAPH.sim --no-guessing \
+vg autoindex --prefix ${SAMPLED_GRAPH}.sim --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.sim.gbz 2> /dev/null
 
 ./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.sim.gbz ${READS}.sim.fastq ${SAMPLED_ALN}.sim.giraffe
