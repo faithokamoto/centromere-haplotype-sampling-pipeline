@@ -15,6 +15,8 @@
     Expects columns for read name, identity, and comma-separated nodes.
     The node list is allowed to end with a comma.
     Also expects a header line but it will be skipped.
+- Alignment logs (<--aln-dir>/<chrom>.<hap>.<ref>.<realness>.<tool>.log).
+    Uses /usr/bin/time output to get runtime and memory usage stats.
 
 == Correctness calculations ==
 
@@ -37,7 +39,7 @@ where as the haplotype was not removed, the private nodes are also required.
 
 import argparse # Command line argument parsing
 import os # Filesystem interactions
-from typing import Dict, Set # Type hints
+from typing import Dict, Set, Tuple # Type hints
 
 REFS = [('CHM13', 'chm13'), 
         ('Neighbor', 'neighbor'), 
@@ -105,13 +107,15 @@ def load_truth_nodes(read_tsv: str) -> Dict[str, Set[int]]:
 
     return truth_nodes
 
-def calc_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
-                   aln_tsv_file: str, req_private: bool) -> None:
+def calc_identity_correctness(truth_nodes: Dict[str, Set[int]], 
+                              private_nodes: Set[int],
+                              aln_tsv_file: str, 
+                              req_private: bool) -> Tuple[float, float]:
     """Calculate mean identity & correctness for an alignment set.
     
     Takes in an alignment TSV from vg filter --tsv-out "name;identity;nodes"
     and uses truth/private node lists to get correctness stats.
-    Prints "mean identity = <identity> and mean correctness = <correctness>"
+    Returns (identity, correctness)
 
     req_private indicates whether these alignments should have used the
     native haplotype; if not, then no penalty is applied when nodes
@@ -147,14 +151,59 @@ def calc_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
                     correctness.append(100 * len(overlap) / len(truth))
             else:
                 raise ValueError(f'No nodes in line from {aln_tsv_file}')
+    mean_identity = sum(identity) / len(identity)
+    mean_correctness = sum(correctness) / len(correctness)
+    return mean_identity, mean_correctness
 
-    print(f'{aln_tsv_file}: mean identity = {sum(identity) / len(identity)}'
-          f' and mean correctness = {sum(correctness) / len(correctness)}')
+def get_runtime_memory(aln_log_file: str) -> Tuple[float, float]:
+    """Extract runtime & memory usage stats from logfile.
+    
+    Expects output from /usr/bin/time in particular using these lines:
+
+    	User time (seconds): X
+	    System time (seconds): Y
+        ...
+	    Maximum resident set size (kbytes): Z
+
+    X + Y is the runtime in seconds, and Z / 10^6 is the memory in GB
+
+    Returns (runtime, memory)
+    """
+
+    runtime = 0
+    memory = 0
+
+    with open(aln_log_file) as file:
+        for line in file:
+            if 'User time' in line or 'System time' in line:
+                runtime += float(line.strip().split()[-1])
+            elif 'Maximum resident set size' in line:
+                # Convert from KB to GB
+                memory = float(line.strip().split()[-1]) / 1_000_000
+
+    return runtime, memory
+
+
+def print_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
+                    aln_prefix: str, req_private: bool) -> None:
+    """Print statistics for each alignment run.
+
+    Prints prefix without directory, e.g. chr12.HG00099.1.sampled.real.giraffe
+    followed by its stats identity, correctness, runtime, memory
+    """
+
+    identity, correctness = calc_identity_correctness(
+        truth_nodes, private_nodes, f'{aln_prefix}.tsv', req_private)
+    runtime, memory = get_runtime_memory(f'{aln_prefix}.log')
+    no_dir_prefix = aln_prefix.split('/')[-1]
+
+    print(f'{no_dir_prefix}: identity {identity} / correctness {correctness} /'
+          f' runtime {runtime} / memory {memory}')
 
 if __name__ == '__main__':
     args = parse_args()
     # Needed across alignment files
-    private_nodes = find_private_nodes(args.gfa, args.hap_name)
+    priv_nodes = find_private_nodes(args.gfa, args.hap_name)
     
     for realness in ['real', 'sim']:
         # Needed across alignment files of a realness
@@ -168,7 +217,7 @@ if __name__ == '__main__':
                     continue
 
                 # Only alignments to a matched assembly must use private nodes
-                req_private = (ref == 'own_hap')
-                aln_tsv = os.path.join(args.aln_dir, 
-                    f'{args.chrom}.{args.hap_name}.{ref}.{realness}.{tool}.tsv')
-                calc_aln_stats(truth_nodes, private_nodes, aln_tsv, req_private)
+                req_priv = (ref == 'own_hap')
+                aln_prefix = os.path.join(args.aln_dir,
+                        f'{args.chrom}.{args.hap_name}.{ref}.{realness}.{tool}')
+                print_aln_stats(truth_nodes, priv_nodes, aln_prefix, req_priv)
