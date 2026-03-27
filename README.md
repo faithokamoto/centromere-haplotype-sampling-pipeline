@@ -61,7 +61,7 @@ for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
     - `guess_n_and_cenhap.py`: guess optimal *n* value and cenhap of input
     - `haploid_paper_alignments.sh`: run the alignments
 - **Plotting**
-    - `collect_data.py`: calculate stats using all the outputs
+    - `haploid_data.py`: calculate stats using all the outputs
     - `plot_identity_and_accuracy.py`: plot ID % and SNV calling across *n*s
     - `plot_variants_vs_dist.py`: four-panel plot for a sample with variant info
 - **Metadata**
