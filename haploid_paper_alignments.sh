@@ -23,7 +23,7 @@ READS=$PROJ_DIR/to_align/$PREFIX
 
 GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
-KMER_DIR=$PROJ_DIR/kmers/$HAP_NAME
+KMER_DIR=$PROJ_DIR/kmers/$PREFIX
 
 mkdir -p $KMER_DIR
 
