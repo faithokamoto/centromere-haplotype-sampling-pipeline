@@ -39,19 +39,18 @@ hits and thus makes read alignment possible. Selection of *n* is non-trivial.
 
 ## Workflow
 
-Starting from an empty directory and installations of the dependencies:
-1. Acquire a Centrolign GFA (or GFAs). The chr12 ones I'm using are in:
-    * `/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/MSA/chr12/subgroup_0/chr12.subgroup_0.centrolign.gfa`
-    * `/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/MSA/chr12/subgroup_1/chr12.subgroup_1.centrolign.gfa`
+What I did:
+1. Acquire a Centrolign GFA (or GFAs), e.g. 
+    `/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/MSA/chr4/chr4.centrolign.gfa`
 2. Connect dummy nodes to the source and sink of each haplotype path. This step
 is necessary because all haplotypes must participate in the same top-level chain
 for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
 3. Convert to a GBZ and index for haplotype sampling: `gfa_to_gbz_ref.sh`
 4. Extract CHM13 reference from the larger graph: `create_single_path_ref.sh`
-5. Perform alignments (currently done with `haploid_paper_alignments.sh`)
-
-`./slurm.sh`, submitted as a SLURM job (parallelized across haplotypes), doing
-all alignments for a particular chromosome.
+5. Acquire reads & linear references: `get_reads.sh` via `slurm_get_reads.sh`
+6. Perform alignment and typing experiments:
+    - `haploid_paper_alignments.sh` (called with `slurm_haploid.sh`)
+    - `diploid_paper_typing.sh` (called with `slurm_diploid.sh`)
 
 ## Files
 
