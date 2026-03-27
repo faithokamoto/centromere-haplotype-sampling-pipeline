@@ -11,6 +11,7 @@ echo "Top of diploid_paper_typing.sh with ${1} ${2} input"
 
 SAMPLE_ID=$1
 CHROM=$2
+PREFIX=${CHROM}.${SAMPLE_ID}
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/$CHROM
@@ -19,23 +20,23 @@ DISTS=$MIRA_DIR/all_pairs/distance_matrices/${CHROM}_r2_QC_v2_centrolign_pairwis
 CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/${CHROM}/${CHROM}.cenhap_predictions.tsv
 
 READS_DIR=$PROJ_DIR/to_align
-READ_SUFFIX=${CHROM}.hifi.real.fastq
-KMER_DIR=$PROJ_DIR/to_align/kmers/$SAMPLE_ID
+KMER_DIR=$PROJ_DIR/kmers/$PREFIX
 
 mkdir -p $KMER_DIR
 
-GUESS_LOG=$PROJ_DIR/graph/diploid/${SAMPLE_ID}.${CHROM}.guess
+GUESS_LOG=$PROJ_DIR/graph/diploid/${PREFIX}.guess
 
 # ---- run typing ----
 
 # Combine haplotype-specific reads
-cat $READS_DIR/${SAMPLE_ID}.*.${READ_SUFFIX} > $READS_DIR/${SAMPLE_ID}.${READ_SUFFIX}
+cat $READS_DIR/${PREFIX}.1.real.fastq $READS_DIR/${PREFIX}.2.real.fastq \
+    > $READS_DIR/${PREFIX}.diploid.real.fastq
 
-kmc -k29 -m128 -okff -t16 -hp $READS_DIR/${SAMPLE_ID}.${READ_SUFFIX} \
-    $KMER_DIR/${SAMPLE_ID}.${CHROM}.real "$KMER_DIR"
+kmc -k29 -m128 -okff -t16 -hp $READS_DIR/${PREFIX}.diploid.real.fastq \
+    $KMER_DIR/${PREFIX}.real "$KMER_DIR"
 
 # Sample 10 haps without alignment, so we can guess ideal # to sample
-vg haplotypes -k $KMER_DIR/${SAMPLE_ID}.${CHROM}.real.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
@@ -45,4 +46,4 @@ vg haplotypes -k $KMER_DIR/${SAMPLE_ID}.${CHROM}.real.kff -i ${BIG_GRAPH}.hapl \
 cat ${GUESS_LOG}.real.log
 
 # No need to save the diploid readset
-rm $READS_DIR/${SAMPLE_ID}.${READ_SUFFIX}
+rm $READS_DIR/${PREFIX}.diploid.real.fastq
