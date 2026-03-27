@@ -162,7 +162,7 @@ if __name__ == '__main__':
                                 f'{args.chrom}.{args.hap_name}.{realness}.tsv'))
         
         for tool in ['minimap2', 'giraffe']:
-            for ref in ['chm13', 'neighbor', 'sampled', 'own_hap']:
+            for ref in ['CHM13', 'neighbor', 'sampled', 'own_hap']:
                 if tool == 'minimap2' and ref == 'sampled':
                     # Minimap2 can't do graph alignments
                     continue
