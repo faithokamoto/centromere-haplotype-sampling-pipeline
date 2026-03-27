@@ -81,7 +81,7 @@ for hap_num in 1 2; do
         echo "Produced simulated reads"
 
         # No longer needed, strictly speaking
-        #rm ${read_prefix}.real.gam ${read_prefix}.sim.gam
+        rm ${read_prefix}.real.gam ${read_prefix}.sim.gam
     done
 done
 
