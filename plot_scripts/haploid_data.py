@@ -35,7 +35,7 @@ General inputs, processed before specific haplotypes:
     Does not expect a header line, or even symmetric lines.
 
 Sample-specific inputs:
-- Haplotype sampling logs (<--log-dir>/<chrom>.<path>.guess.log).
+- Haplotype sampling logs (<--log-dir>/<chrom>.<path>.guess.real.log).
     Expects a line output by `./guess_n_and_cenhap.py`.
     "Best guess: use <n> haplotypes & sample cenhap = <cenhap>".
     Also uses lines like "Selected haplotype <name> with score <score>"
@@ -76,9 +76,9 @@ def parse_args() -> argparse.Namespace:
     """Handle command-line argument parsing."""
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--cenhap-dir', required=True,
-                        help='TSV of truth cenhap assignments')
+                        help='Directory with TSVs of truth cenhap assignments')
     parser.add_argument('-d', '--dist-dir', required=True,
-                        help='CSV of pairwise haplotype distances')
+                        help='Directory with CSVs of pairwise distances')
     parser.add_argument('-l', '--log-dir', required=True,
                         help='Directory with haplotype sampling logs')
     parser.add_argument('-a', '--aln-dir', required=True,
