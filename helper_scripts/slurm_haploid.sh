@@ -24,17 +24,18 @@
 #SBATCH --time=6:00:00
 #
 # Array job specification:
-#SBATCH --array=1-139
-
-DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
+#SBATCH --array=1-1969
 
 # Activate Conda environment
 source /private/home/${USER}/.bashrc
 source activate cenhap-sample
 
-GFA=/private/groups/patenlab/fokamoto/centrolign/graph/unsampled/chr17.gfa
-path_name=`grep "^P" "$GFA" | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -f2 | cut -d "#" -f3`
-echo "Running path: $path_name"
+HAP_GRAPH_DIR=/private/groups/patenlab/fokamoto/centrolign/graph/haploid
+cur_hap_graph=`ls $HAP_GRAPH_DIR/*.*.*.gbz | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -f9 -d "/"`
+chrom=`echo "$cur_hap_graph" | cut -f1 -d "."`
+hap_name=`echo "$cur_hap_graph" | cut -f2,3 -d "."`
+echo "Running $hap_name on $chrom"
 
-log=$DIR/log/${path_name}.chr17.log
-$DIR/haploid_paper_alignments.sh $path_name chr17 &> $log
+DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
+log=$DIR/log/${chrom}.${hap_name}.log
+$DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"
