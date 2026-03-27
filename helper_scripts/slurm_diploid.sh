@@ -33,8 +33,8 @@ source /private/home/${USER}/.bashrc
 source activate cenhap-sample
 
 HAP_GRAPH_DIR=/private/groups/patenlab/fokamoto/centrolign/graph/haploid
-combo=`ls $HAP_GRAPH_DIR/*.*.*.gbz | cut -f9 -d "/" | cut -f1-2 -d "." | \
-    uniq -c | fgrep -v "1 chr" | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1`
+combo=`ls $HAP_GRAPH_DIR/*.*.*.gbz | cut -f9 -d "/" | cut -f1-2 -d "." | uniq -c \
+    | fgrep -v "1 chr" | head -n $SLURM_ARRAY_TASK_ID | tail -n 1 | cut -f2 -d "2" | sed "s/ //g"`
 chrom=`echo "$combo" | cut -f1 -d "."`
 sample_id=`echo "$combo" | cut -f2 -d "."`
 echo "Running $sample_id on $chrom"
