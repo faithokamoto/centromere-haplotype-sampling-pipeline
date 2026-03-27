@@ -4,10 +4,13 @@
 == Output ==
 
 For each haplotype run, collect
-- Path name
+- Chromosome
+- Haplotype name
 - Truth cenhap
 - Guessed cenhap
 - Num haplotypes sampled
+- Names of sampled haps (comma-separated)
+- Scores of sampled haps (comma-separated)
 - Distance to closest hap in graph
 - Distance to closest sampled hap (within the ones we chose to align to)
 - Stats (identity, correctness, runtime, memory usage) for each alignment run:
@@ -24,97 +27,66 @@ These are output as a TSV to standard output.
 == Inputs ==
 
 General inputs, processed before specific haplotypes:
-- Truth cenhap assignment TSV (--cenhap-table).
+- Truth cenhaps (<--cenhap-dir>/<chrom>/<chrom>.cenhap_predictions.tsv).
     Expects columns for path name and then cenhap, in that order.
     Also expects a header line but it will be skipped.
-- Pairwise haplotype distances (--distances).
+- Pair dists (<--dist-dir>/<chrom>_r2_QC_v2_centrolign_pairwise_distance.csv).
     Expects columns for hap1, hap2, and then float distance (0-1).
     Does not expect a header line, or even symmetric lines.
-- GFA file with haplotype paths (--gfa).
-    Expects all paths as P lines; ignores all other lines.
-    The node list is allowed to end with a comma.
-    https://gfa-spec.github.io/GFA-spec/GFA1.html
 
 Sample-specific inputs:
-- Haplotype sampling logs (<--log-dir>/<path>.guess.log).
+- Haplotype sampling logs (<--log-dir>/<chrom>.<path>.guess.log).
     Expects a line output by `./guess_n_and_cenhap.py`.
     "Best guess: use <n> haplotypes & sample cenhap = <cenhap>".
     Also uses lines like "Selected haplotype <name> with score <score>"
     to get the haplotypes sampled in order.
-- Truth read positions (<--reads-dir>/real_<path>.<chrom>.hifi.tsv).
-    Expects columns for read name and then comma-separated nodes.
-    The node list is allowed to end with a comma.
-    Also expects a header line but it will be skipped.
-- Alignment metadata (<--aln-dir>/<path>.<chrom>.<infix>.tsv).
-    Expects columns for read name, identity, and comma-separated nodes.
-    The node list is allowed to end with a comma.
-    Also expects a header line but it will be skipped.
-- Alignment logs (<--aln-dir>/<path>.<chrom>.<infix>.log).
-    For Minimap2 logs, pulls CPU time Y and memory Z from lines like
-        [M::main] Real time: X sec; CPU: Y sec; Peak RSS: Z GB
-    For Giraffe logs, pulls CPU time Y and memory Z from lines like
-        [vg giraffe] Used Y CPU-seconds (including output).
-        [vg giraffe] Memory footprint: Z GB
-
-== Correctness calculations ==
-
-The typical definition of alignment correctness (i.e. position overlap)
-is problematic for these "leave-one-out" alignments. If the "correct"
-starting position is located in sequence private to that haplotype,
-then the read would have nowhere "correct" to map to.
-
-Thus, "correctness" is herein defined as % of possible node overlaps found.
-That is, if the truth position covered 150 nodes, 50 of those nodes are on
-private sequence, and the alignment overlaps 80 of the rest, then it has
-
-    100% * 80 / (150 - 50) = 100% * 80 / 100 = 80% correctness
-
-Orientation is ignored, and partial coverage is counted as full.
-
-The only variation to this formula occurs for "native hap" alignments,
-where as the haplotype was not removed, the private nodes are also required.
+- Alignment stats (<--aln-dir>/<chrom>.<path>.stats.log).
+    A stats file with lines
+        [prefix]: identity [0-1] / correctness [%] / runtime [sec] / memory [GB]
 """
 
 import argparse # Command line argument parsing
 import os # File system interaction
-from typing import Dict, List, Tuple, Set # Type hints
+from typing import Dict, List, Tuple # Type hints
 
-REFS = [('CHM13', 'chm13'), 
-        ('Neighbor', 'neighbor'), 
-        ('Sampled', 'sampled'), 
-        ('Native hap', 'own_hap')]
-"""References used in alignments."""
+# Parts of file names (see file docstring)
+CENHAP_SUFFIX = 'cenhap_predictions.tsv'
+DIST_SUFFIX = 'r2_QC_v2_centrolign_pairwise_distance.csv'
+GUESS_SUFFIX = 'guess.real.log'
+STATS_SUFFIX = 'stats.log'
+
+REFS = {'CHM13'      : 'CHM13', 
+        'Neighbor'   : 'neighbor', 
+        'Sampled'    : 'sampled', 
+        'Native hap' : 'own_hap'}
+"""Match up column titles to filenames"""
 REALNESS = ['real', 'sim']
 """Possible levels of realness."""
 ALIGNERS = ['minimap2', 'giraffe']
 """Names of aligners used."""
 
 # All combinations, except that minimap2 can't align to the sampled graph
-ALN_INFIXES = {f'{long_ref} {tool} {real}' : f'{short_ref}.{real}.{tool}' 
-               for long_ref, short_ref in REFS 
+ALN_COMBOS = [(ref, realness, tool)
+               for ref in REFS.keys()
+               for realness in REALNESS
                for tool in ALIGNERS 
-               for real in REALNESS
-               if not (short_ref == 'sampled' and tool == 'minimap2')}
+               if not (ref == 'Sampled' and tool == 'minimap2')]
 
 def parse_args() -> argparse.Namespace:
     """Handle command-line argument parsing."""
     parser = argparse.ArgumentParser()
-    parser.add_argument('-C', '--chrom', help='Chromosome to get data for')
-    parser.add_argument('-c', '--cenhap-table',
+    parser.add_argument('-c', '--cenhap-dir', required=True,
                         help='TSV of truth cenhap assignments')
-    parser.add_argument('-d', '--distances',
+    parser.add_argument('-d', '--dist-dir', required=True,
                         help='CSV of pairwise haplotype distances')
-    parser.add_argument('-g', '--gfa', help='GFA file with path nodes')
-    parser.add_argument('-l', '--log-dir',
+    parser.add_argument('-l', '--log-dir', required=True,
                         help='Directory with haplotype sampling logs')
-    parser.add_argument('-r', '--reads-dir',
-                        help='Directory with TSVs of truth read positions')
-    parser.add_argument('-a', '--aln-dir',
-                        help='Directory with TSVs for read alignments')
+    parser.add_argument('-a', '--aln-dir', required=True,
+                        help='Directory with read alignment stat files')
     return parser.parse_args()
 
-def read_cenhap_table(cenhap_file: str) -> Dict[str, str]:
-    """Read the cenhap assignment table.
+def read_chrom_cenhap_table(cenhap_file: str) -> Dict[str, str]:
+    """Read a cenhap assignment table.
     
     Assuming the first line is a header,
     reads haplotype,cenhap lines into 
@@ -127,6 +99,20 @@ def read_cenhap_table(cenhap_file: str) -> Dict[str, str]:
             parts = line.strip().split('\t')
             cenhap_table[parts[0]] = parts[1]
     return cenhap_table
+
+def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
+    """Reads all cenhap tables in a directory.
+    
+    Finds all files matching
+        <--cenhap-dir>/<chrom>/<chrom>.cenhap_predictions.tsv
+    and reads them into a {chrom : table} dictionary
+    """
+    cenhap_tables = dict()
+    for item in os.listdir(cenhap_dir):
+        if 'chr' in item:
+            cenhap_tables[item] = read_chrom_cenhap_table(
+                os.path.join(cenhap_dir, item, f'{item}.{CENHAP_SUFFIX}'))
+    return cenhap_tables
 
 def read_distances(distances_file: str) -> Dict[str, Dict[str, float]]:
     """Read the pairwise distance file.
@@ -151,241 +137,118 @@ def read_distances(distances_file: str) -> Dict[str, Dict[str, float]]:
             dist_matrix[hap2][hap1] = dist
     return dist_matrix
 
-def parse_node_list(node_str: str) -> Set[int]:
-    """Convert comma-separated list of node IDs to set of normalized IDs."""
-    return {int(node.rstrip('+-')) for node 
-            in node_str.strip().split(',') if node}
-
-def find_private_nodes(gfa_file: str) -> Dict[str, Set[int]]:
-    """Use GFA file to find nodes private to each haplotype.
-    
-    Reads each path's nodes from the P lines,
-    and returns a dictionary with {path : {nodes}}
-    for nodes appearing in only one path.
-    """
-
-    path_nodes = dict()
-    node_counts = dict()
-
-    with open(gfa_file) as f:
-        for line in f:
-            if not line.startswith('P'):
-                continue
-
-            parts = line.rstrip().split()
-            # Extract contig name from <sample ID>#<hap num>#<contig>
-            path_name = parts[1].split('#')[-1]
-            nodes = parse_node_list(parts[2])
-
-            path_nodes[path_name] = nodes
-            for node in nodes:
-                # In case this node hasn't been seen before
-                if node not in node_counts:
-                    node_counts[node] = 0
-                node_counts[node] += 1
-
-    # Subset each paths' nodes to only the unique ones
-    return {path_name : {n for n in nodes if node_counts[n] == 1}
-            for path_name, nodes in path_nodes.items()}
-
-def find_guesses(log_file: str) -> Tuple[List[str], List[str], str]:
+def get_guesses(log_file: str) -> Tuple[List[str], List[str], int, str]:
     """Look up the guessed # of sampled haplotypes & cenhap.
     
     Pulls # of sampled haplotypes and guessed cenhap from line
-    "Best guess: use <n> haplotypes & sample cenhap = <cenhap>".
+        Best guess: use <n> haplotypes & sample cenhap = <cenhap>.
     Also pulls specific sampled haplotypes via
-    "Selected haplotype <name> with score <score>" lines
+        Selected haplotype <name> with score <score>
     which must appear before the best-guess line.
 
-    Returns a list of the haplotypes used, along with
-    the cenhap guessed for the source haplotype.
+    Returns
+    - A list of the haplotypes selected, in order
+    - A list of their scores, in order
+    - How many haplotypes from that were subsampled for the graph
+    - What cenhap this haplotype was guessed as
     """
 
     sampled_haps = []
+    sampled_scores = []
+    n_haps = 0
+    guessed_cenhap = None
     with open(log_file) as file:
         for line in file:
             parts = line.strip().split()
             if line.startswith('Selected haplotype'):
                 sampled_haps.append(parts[2])
+                sampled_scores.append(parts[5])
             elif line.startswith('Best guess'):
                 n_haps = int(parts[3])
-                return (sampled_haps[:n_haps], parts[-1])
+                guessed_cenhap = parts[-1]
             
-    return (None, None)
+    return sampled_haps, sampled_scores, n_haps, guessed_cenhap
 
-def load_truth_nodes(read_tsv: str) -> Dict[str, Set[int]]:
-    """Load the truth node positions for read set.
+def get_aln_stats(log_file: str) -> Dict[str, List[float]]:
+    """Read alignment statistics from stats log file.
     
-    Uses a TSV output by vg filter --tsv-out "name;nodes".
-    Ignores orientations (see "Correctness calculations").
-    Outputs {read name : {nodes}}
+    Uses lines like
+        [prefix]: identity [0-1] / correctness [%] / runtime [sec] / memory [GB]
+    
+    Returns {prefix : [identity, correctness, runtime, memory]}
     """
 
-    truth_nodes = dict()
-    with open(read_tsv) as file:
-        file.readline() # header
-        for line in file:
-            parts = line.strip().split()
-            if len(parts) == 2:
-                truth_nodes[parts[0]] = parse_node_list(parts[1])
-
-    return truth_nodes
-
-def calc_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
-                   aln_tsv_file: str, is_native: bool) -> Tuple[float, float]:
-    """Calculate mean identity & correctness for an alignment set.
-    
-    Takes in an alignment TSV from vg filter --tsv-out "name;identity;nodes"
-    and uses truth/private node lists to get correctness stats.
-    Outputs tuple of (mean identity, mean correctness).
-
-    is_native indicates whether these alignments were allowed to use the
-    native haplotype; if not, then no penalty is applied when nodes
-    private to the haplotype path are missed. See "Correctness calculations".
-    """
-
-    identity_scores = []
-    correctness_scores = []
-
-    with open(aln_tsv_file) as file:
-        file.readline() # header
-        for line in file:
-            parts = line.strip().split()
-            identity_scores.append(float(parts[1]))
-
-            # Calculate correctness of this node list
-            if len(parts) == 2 and parts[1] == '0':
-                # Unmapped read has 0 correctness
-                correctness_scores.append(0)
-            elif len(parts) == 3:
-                aln_nodes = parse_node_list(parts[2])
-                if parts[0] in truth_nodes:
-                    truth = truth_nodes[parts[0]]
-
-                    if not is_native:
-                        # Don't require alignments to private nodes
-                        truth -= private_nodes
-                    if not truth:
-                        # All truth nodes have been thrown out
-                        continue
-                    
-                    overlap = truth & aln_nodes
-                    correctness_scores.append(100 * len(overlap) / len(truth))
-            else:
-                raise ValueError(f'No nodes in line from {aln_tsv_file}')
-
-    if not identity_scores:
-        print(aln_tsv_file)
-        return None, None
-    mean_identity = sum(identity_scores) / len(identity_scores)
-    mean_correctness = sum(correctness_scores) / len(correctness_scores)
-    return mean_identity, mean_correctness
-
-def read_runtime_memory_minimap2(log_file: str) -> Tuple[float, float]:
-    """Read runtime and memory usage from Minimap2 log.
-    
-    Uses last line in file, returning (Y, Z)
-        [M::main] Real time: X sec; CPU: Y sec; Peak RSS: Z GB
-    """
+    aln_stats = dict()
     with open(log_file) as file:
         for line in file:
-            if 'Real time' in line:
-                parts = line.strip().split()
-                runtime = float(parts[6])
-                memory = float(parts[10])
-                return runtime, memory
-    raise RuntimeError(f'No runtime/memory usage line in {log_file}')
+            parts = line.strip().split()
 
-def read_runtime_memory_giraffe(log_file: str) -> Tuple[float, float]:
-    """Read runtime and memory usage from Giraffe log.
-    
-    Uses last few lines in file, returning (Y, Z)
-        [vg giraffe] Used Y CPU-seconds (including output).
-        [vg giraffe] Memory footprint: Z GB
-    """
-    runtime = None
-    memory = None
-    with open(log_file) as file:
-        for line in file:
-            if 'CPU-seconds' in line:
-                runtime = float(line.split()[3])
-            elif 'Memory footprint' in line:
-                memory = float(line.split()[4])
-    if runtime is None or memory is None:
-        raise RuntimeError(f'No runtime/memory usage line in {log_file}')
-    return runtime, memory
+            prefix = parts[0].rstrip(':')
+            identity = float(parts[2])
+            correctness = float(parts[5])
+            runtime = float(parts[8])
+            memory = float(parts[11])
 
-def write_data(chrom: str,
-               cenhap_table: Dict[str, str], 
-               dist_matrix: Dict[str, Dict[str, float]],
-               private_nodes: Dict[str, Set[str]]) -> None:
+            aln_stats[prefix] = [identity, correctness, runtime, memory]
+
+    return aln_stats
+
+def write_data(cenhap_tables: Dict[str, Dict[str, str]],
+               distance_matrices: Dict[str, Dict[str, Dict[str, float]]],
+               log_dir: str, aln_dir: str) -> None:
     """Write the output TSV (see file docstring)."""
     # Write header
-    column_titles = ['Path name', 'Truth cenhap', 'Guessed cenhap',
+    column_titles = ['Chromosome', 'Haplotype name',
+                     'Truth cenhap', 'Guessed cenhap', '# haplotypes sampled',
+                     'Sampled haplotype names', 'Sampled haplotype scores',
                      'Minimum graph distance', 'Minimum sampled distance']
-    for aln_group in ALN_INFIXES.keys():
+    for (ref, realness, tool) in ALN_COMBOS:
+        aln_group = f'{ref} {tool} {realness}'
         column_titles += [f'{aln_group} identity', f'{aln_group} correctness',
                           f'{aln_group} runtime', f'{aln_group} memory']
     print('\t'.join(column_titles))
 
-    for path_name, truth_cenhap in cenhap_table.items():
-        items_to_write = [path_name, truth_cenhap]
-        
-        guess_file = os.path.join(args.log_dir, 
-                                  f'{path_name}.{chrom}.guess.real.log')
-        if not os.path.exists(guess_file):
-            # No haplotype sampling occurred; skip
-            continue
-
-        # Add guesses from logfile
-        sampled, guess_cenhap = find_guesses(guess_file)
-        items_to_write.append(guess_cenhap)
-
-        # Look up distances
-        dist_row = dist_matrix[path_name]
-        # Min distance to any haplotype
-        true_closest_hap = min(dist_row, key=dist_row.get)
-        # Min distance to a sampled haplotype
-        closest_sampled_hap = min(sampled, key=dist_row.get)
-        items_to_write += [dist_row[true_closest_hap], 
-                           dist_row[closest_sampled_hap]]
-
-        real_truth_nodes = load_truth_nodes(os.path.join(args.reads_dir, 
-                                            f'{path_name}.{chrom}.hifi.real.tsv'))
-        sim_truth_nodes = load_truth_nodes(os.path.join(args.reads_dir, 
-                                            f'{path_name}.{chrom}.hifi.sim.tsv'))
-        for aln_group, tsv_infix in ALN_INFIXES.items():
-            # Construct inputs for identity/correctness stats
-            aln_tsv_file = os.path.join(args.aln_dir, 
-                                        f'{path_name}.{chrom}.{tsv_infix}.tsv')
-            is_native = aln_group.startswith('Native')
-            if 'real' in aln_group:
-                truth_nodes = real_truth_nodes
-            else:
-                truth_nodes = sim_truth_nodes
-            # Add stats to the list of values to write
-            identity, correctness = calc_aln_stats(
-                truth_nodes, private_nodes[path_name], aln_tsv_file, is_native)
-            if identity is None:
+    for chrom in cenhap_tables.keys():
+        for hap_name, truth_cenhap in cenhap_tables[chrom].items():
+            items_to_write = [chrom, hap_name, truth_cenhap]
+            
+            guess_file = os.path.join(
+                log_dir, f'{chrom}.{hap_name}.{GUESS_SUFFIX}')
+            if not os.path.exists(guess_file):
+                # This haplotype didn't go through the pipeline; skip
                 continue
-            items_to_write += [identity, correctness]
 
-            # Construct inputs for runtime/memory stats
-            aln_log_file = os.path.join(args.aln_dir, 
-                                        f'{path_name}.{chrom}.{tsv_infix}.log')
-            if 'minimap2' in aln_group:
-                runtime, memory = read_runtime_memory_minimap2(aln_log_file)
-            else:
-                runtime, memory = read_runtime_memory_giraffe(aln_log_file)
-            items_to_write += [runtime, memory]
+            # Add guesses from logfile
+            sampled_haps, scores, n_haps, guess_cenhap = get_guesses(guess_file)
+            items_to_write += [guess_cenhap, n_haps, 
+                               ','.join(sampled_haps), ','.join(scores)]
 
-        print('\t'.join(str(item) for item in items_to_write))
+            # Look up distances
+            dist_row = distance_matrices[chrom][hap_name]
+            # Min distance to any haplotype
+            true_closest_hap = min(dist_row, key=dist_row.get)
+            # Min distance to a sampled haplotype
+            closest_sampled_hap = min(sampled_haps[:n_haps], key=dist_row.get)
+            items_to_write += [dist_row[true_closest_hap], 
+                               dist_row[closest_sampled_hap]]
+
+            # Dump in alignment stats as well
+            aln_stats = get_aln_stats(
+                os.path.join(aln_dir, f'{chrom}.{hap_name}.{STATS_SUFFIX}'))
+            for (ref, realness, tool) in ALN_COMBOS:
+                prefix = f'{chrom}.{hap_name}.{REFS[ref]}.{realness}.{tool}'
+                items_to_write += aln_stats[prefix]
+
+            print('\t'.join(str(item) for item in items_to_write))
 
 if __name__ == '__main__':
     args = parse_args()
     # Load cross-sample files first
-    cenhap_table = read_cenhap_table(args.cenhap_table)
-    dist_matrix = read_distances(args.distances)
-    private_nodes = find_private_nodes(args.gfa)
+    cenhap_tables = read_all_cenhap_tables(args.cenhap_dir)
+    dist_matrices = dict()
+    # Only bother to read distance matrices for chroms with cenhap tables
+    for chrom in cenhap_tables.keys():
+        dist_matrices[chrom] = read_distances(
+            os.path.join(args.dist_dir, f'{chrom}_{DIST_SUFFIX}'))
     # Write by-sample data
-    write_data(args.chrom, cenhap_table, dist_matrix, private_nodes)
+    write_data(cenhap_tables, dist_matrices, args.log_dir, args.aln_dir)
