@@ -24,14 +24,14 @@
 #SBATCH --time=4:00:00
 #
 # Array job specification:
-#SBATCH --array=1-1969
+#SBATCH --array=1-1967
 
 # Activate Conda environment
 source /private/home/${USER}/.bashrc
 source activate cenhap-sample
 
 HAP_GRAPH_DIR=/private/groups/patenlab/fokamoto/centrolign/graph/haploid
-cur_hap_graph=`ls $HAP_GRAPH_DIR/*.*.*.gbz | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -f9 -d "/"`
+cur_hap_graph=`ls $HAP_GRAPH_DIR/*.*.1.gbz $HAP_GRAPH_DIR/*.*.2.gbz | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -f9 -d "/"`
 chrom=`echo "$cur_hap_graph" | cut -f1 -d "."`
 hap_name=`echo "$cur_hap_graph" | cut -f2,3 -d "."`
 echo "Running $hap_name on $chrom"
