@@ -1,7 +1,7 @@
 #!/bin/bash
 # Extract a single path from larger graph and index it for alignment
 # Usage: create_single_path_ref.sh <big graph> <path name> <small graph prefix>
-# Example: create_single_path_ref.sh $PROJ_DIR/graph/unsampled/chr12.pg CHM13#0#CHM13.0#0 $PROJ_DIR/graph/haploid/chm13.chr12asat
+# Example: create_single_path_ref.sh $PROJ_DIR/graph/unsampled/chr12.pg CHM13#0#CHM13.0#0 $PROJ_DIR/graph/haploid/chr12.CHM13
 
 BIG_GRAPH=$1
 PATH_NAME=$2
