@@ -35,7 +35,6 @@ source activate cenhap-sample
 HAP_GRAPH_DIR=/private/groups/patenlab/fokamoto/centrolign/graph/haploid
 combo=`ls $HAP_GRAPH_DIR/*.*.1.gbz $HAP_GRAPH_DIR/*.*.2.gbz | cut -f9 -d "/" | cut -f1-2 -d "." | uniq -c \
     | fgrep -v "1 chr" | head -n "$SLURM_ARRAY_TASK_ID" | tail -1 | sed "s/      2 //g"`
-echo $combo
 chrom=`echo "$combo" | cut -f1 -d "."`
 sample_id=`echo "$combo" | cut -f2 -d "."`
 echo "Running $sample_id on $chrom"
