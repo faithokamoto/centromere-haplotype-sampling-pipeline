@@ -45,5 +45,6 @@ vg haplotypes -k $KMER_DIR/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
         --dist-matrix "$DISTS" ${GUESS_LOG}.real.log &>> ${GUESS_LOG}.real.log
 cat ${GUESS_LOG}.real.log
 
-# No need to save the diploid readset
+# No need to save these
 rm $READS_DIR/${PREFIX}.diploid.real.fastq
+rm -rf $KMER_DIR
