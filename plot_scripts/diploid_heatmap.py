@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
+from collections import Counter
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
+CHROM_ORDER = ['chr4', 'chr6', 'chr9', 'chr10', 'chr11', 'chr12', 'chr17']
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -33,13 +35,16 @@ def canonicalize_pair(pair_str):
 
 
 def load_rows(path):
-    rows = []
+    rows = dict()
     with open(path) as f:
         reader = csv.DictReader(f, delimiter="\t")
         for r in reader:
-            rows.append({
-                "truth": canonicalize_pair(r["true_cenhaps"]),
-                "guess": canonicalize_pair(r["guessed_cenhaps"])
+            chrom = r["Chromosome"]
+            if not chrom in rows:
+                rows[chrom] = []
+            rows[chrom].append({
+                "truth": canonicalize_pair(r["Truth cenhaps"]),
+                "guess": canonicalize_pair(r["Guessed cenhaps"])
             })
     return rows
 
@@ -51,8 +56,21 @@ def make_heatmap(ax, rows):
 
     counts = np.zeros((len(labels), len(labels)))
 
+    diploid_matches = 0
+    haploid_matches = 0
     for r in rows:
         counts[index[r['truth']], index[r['guess']]] += 1
+        if r['truth'] == r['guess']:
+            diploid_matches += 1
+        truth_haps = Counter(r['truth'].split('/'))
+        guessed_haps = Counter(r['guess'].split('/'))
+        haploid_matches += sum(min(truth_haps[cenhap], guessed_haps[cenhap]) 
+                               for cenhap in truth_haps)
+    
+    diploid_acc = 100 * diploid_matches / len(rows)
+    haploid_acc = 100 * haploid_matches / (len(rows) * 2)
+    print(f'diploid accuracy: {diploid_acc:2f}%, '
+          f'haploid accuracy: {haploid_acc:2f}%')
 
     # Normalize row-wise
     norm = counts.copy()
@@ -91,8 +109,14 @@ if __name__ == "__main__":
 
     rows = load_rows(args.input_tsv)
 
-    fig, ax = plt.subplots(figsize=(8, 8))
-    make_heatmap(ax, rows)
+    fig, axs = plt.subplots(nrows=2, ncols=4, figsize=(60, 30))
+    for i, chrom in enumerate(CHROM_ORDER):
+        cur_row = i // 4
+        cur_col = i % 4
+        make_heatmap(axs[cur_row][cur_col], rows[chrom])
+        axs[cur_row][cur_col].set_title(chrom)
+    
+    axs[1][3].set_axis_off()
 
     plt.tight_layout()
     plt.savefig(args.output, dpi=300)
