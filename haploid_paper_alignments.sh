@@ -12,22 +12,17 @@ echo "Top of haploid_paper_alignments.sh with ${1} ${2} input"
 HAP_NAME=$1
 CHROM=$2
 SAMPLE_ID=`echo "$HAP_NAME" | cut -f1 -d "." `
-HAPLO_NUM=`echo "$HAP_NAME" | cut -f2 -d "." `
-PATH_NAME="${SAMPLE_ID}#${HAPLO_NUM}#${HAP_NAME}#0"
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/$CHROM
-BAM_LOCS=$PROJ_DIR/to_align/aws_file_locations.csv
-MIRA_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2
-BED_DIR=$MIRA_DIR/per_smp_asat_beds
-DISTS=$MIRA_DIR/all_pairs/distance_matrices/${CHROM}_r2_QC_v2_centrolign_pairwise_distance.csv
+DISTS=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/all_pairs/distance_matrices/${CHROM}_r2_QC_v2_centrolign_pairwise_distance.csv
 CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/${CHROM}/${CHROM}.cenhap_predictions.tsv
 
 READS=$PROJ_DIR/to_align/${CHROM}.${HAP_NAME}
 
 GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
-KMER_DIR=$PROJ_DIR/to_align/kmers/$HAP_NAME
+KMER_DIR=$PROJ_DIR/kmers/$HAP_NAME
 
 mkdir -p $KMER_DIR
 
@@ -35,22 +30,19 @@ nearest_neighbor=`grep "$HAP_NAME" "$DISTS" | sed 's/,/\t/g' | sort -k3 -n | hea
     | cut -f1-2 | tr "\t" "\n" | grep -v "$HAP_NAME"`
 echo "Nearest neighbor: $nearest_neighbor"
 
-CHM13_GRAPH=$GRAPH_DIR/${CHROM}.chm13
+CHM13_GRAPH=$GRAPH_DIR/${CHROM}.CHM13
 OWN_HAP_GRAPH=$GRAPH_DIR/${CHROM}.${HAP_NAME}
 NEIGHBOR_GRAPH=$GRAPH_DIR/${CHROM}.${nearest_neighbor}
 SAMPLED_GRAPH=$GRAPH_DIR/${CHROM}.${HAP_NAME}.sampled
 
 OWN_HAP_ALN=$ALN_DIR/${CHROM}.${HAP_NAME}.own_hap
 NEIGHBOR_ALN=$ALN_DIR/${CHROM}.${HAP_NAME}.neighbor
-CHM13_ALN=$ALN_DIR/${CHROM}.${HAP_NAME}.chm13
+CHM13_ALN=$ALN_DIR/${CHROM}.${HAP_NAME}.CHM13
 SAMPLED_ALN=$ALN_DIR/${CHROM}.${HAP_NAME}.sampled
 
 GUESS_LOG=$GRAPH_DIR/${CHROM}.${HAP_NAME}.guess
 
 # ---- basic alignments (real reads) ----
-
-echo "====="
-echo "Linear reference alignments for real reads"
 
 # align to own haplotype
 ./helper_scripts/align_reads_minimap2.sh "$OWN_HAP_GRAPH" \
@@ -72,9 +64,6 @@ echo "Linear reference alignments for real reads"
 
 # ---- basic alignments (sim reads) ----
 
-echo "====="
-echo "Linear reference alignments for sim reads"
-
 # align to own haplotype
 ./helper_scripts/align_reads_minimap2.sh "$OWN_HAP_GRAPH" \
     ${READS}.sim.fastq ${OWN_HAP_ALN}.sim.minimap2
@@ -95,14 +84,13 @@ echo "Linear reference alignments for sim reads"
 
 # ---- align to to haplotype-sampled graphs (real) ----
 
-echo "====="
 echo "Haplotype sampling on real reads"
 
 kmc -k29 -m128 -okff -t16 -hp ${READS}.real.fastq \
-    $KMER_DIR/${HAP_NAME}.${CHROM}.real "$KMER_DIR"
+    $KMER_DIR/${CHROM}.${HAP_NAME}.real "$KMER_DIR"
 
 # Sample 5 haps without alignment, so we can guess ideal # to sample
-vg haplotypes -k $KMER_DIR/${HAP_NAME}.${CHROM}.real.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${CHROM}.${HAP_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
@@ -113,7 +101,7 @@ cat ${GUESS_LOG}.real.log
 
 n_to_sample=`fgrep Best ${GUESS_LOG}.real.log | cut -d " " -f4`
 
-vg haplotypes -k $KMER_DIR/${HAP_NAME}.${CHROM}.real.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${CHROM}.${HAP_NAME}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.real.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
 vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
@@ -123,14 +111,13 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
 
 # ---- align to to haplotype-sampled graphs (sim) ----
 
-echo "====="
 echo "Haplotype sampling on sim reads"
 
 kmc -k29 -m128 -okff -t16 -hp ${READS}.sim.fastq \
-    $KMER_DIR/${HAP_NAME}.${CHROM}.sim "$KMER_DIR"
+    $KMER_DIR/${CHROM}.${HAP_NAME}.sim "$KMER_DIR"
 
 # Sample 5 haps without alignment, so we can guess ideal # to sample
-vg haplotypes -k $KMER_DIR/${HAP_NAME}.${CHROM}.sim.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${CHROM}.${HAP_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.sim.log
 
@@ -141,7 +128,7 @@ cat ${GUESS_LOG}.sim.log
 
 n_to_sample=`fgrep Best ${GUESS_LOG}.sim.log | cut -d " " -f4`
 
-vg haplotypes -k $KMER_DIR/${HAP_NAME}.${CHROM}.sim.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $KMER_DIR/${CHROM}.${HAP_NAME}.sim.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
     -g ${SAMPLED_GRAPH}.sim.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
 vg autoindex --prefix ${SAMPLED_GRAPH}.sim --no-guessing \
@@ -152,4 +139,7 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.sim --no-guessing \
 # ---- get stats! ----
 
 ./helper_scripts/calculate_alignment_stats.py -c "$CHROM" -n "$HAP_NAME" \
-    -g $BIG_GRAPH.gfa -r $PROJ_DIR/to_align -a "$GRAPH_DIR"
+    -g $BIG_GRAPH.gfa -r $PROJ_DIR/to_align -a "$ALN_DIR"
+
+# Clean up behind for space reasons
+rm $ALN_DIR/${CHROM}.${HAP_NAME}.*
