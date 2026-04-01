@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
+CHROM_ORDER = ['chr4', 'chr6', 'chr9', 'chr10', 'chr11', 'chr12', 'chr17']
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input-tsv', help='TSV with data to plot')
@@ -94,8 +96,15 @@ def make_heatmap(ax: plt.Axes, rows: dict):
 
     counts = np.zeros((len(labels), len(labels)))
 
+    correct = 0
+    total = 0
     for r in rows:
         counts[index[r['Truth cenhap']], index[r['Guessed cenhap']]] += 1
+        if r['Truth cenhap'] == r['Guessed cenhap']:
+            correct += 1
+        total += 1
+
+    print(f'Accuracy: {(100 * correct / total):2f}')
 
     # Normalize row-wise
     norm = counts.copy()
@@ -121,8 +130,8 @@ def make_heatmap(ax: plt.Axes, rows: dict):
     ax.set_yticks(range(len(labels)))
     ax.set_yticklabels(labels)
 
-    ax.set_xlabel('Guessed cenhap pair')
-    ax.set_ylabel('True cenhap pair')
+    ax.set_xlabel('Guessed cenhap')
+    ax.set_ylabel('True cenhap')
 
     ax.set_box_aspect(1)
 
@@ -207,11 +216,17 @@ def fig5(rows, header, outdir):
 def sup_haploid_heatmaps(rows, outdir):
     groups = group_by([r for r in rows], 'Chromosome')
 
-    fig, axs = plt.subplots(1, 2, figsize=(10, 6))
+    fig, axs = plt.subplots(2, 4, figsize=(30, 15))
 
-    for i, chrom in enumerate(sorted(groups.keys())):
-        make_heatmap(axs[i], groups[chrom])
-        axs[i].set_title(chrom)
+    for i, chrom in enumerate(CHROM_ORDER):
+        cur_row = i // 4
+        cur_col = i % 4
+        make_heatmap(axs[cur_row][cur_col], groups[chrom])
+        axs[cur_row][cur_col].set_title(chrom)
+        if cur_row == 0:
+            axs[cur_row][cur_col].set_ylabel("")
+
+    axs[1][3].set_axis_off()
 
     fig.tight_layout()
     fig.savefig(os.path.join(outdir, "sup_haploids.png"), dpi=300)
@@ -225,7 +240,7 @@ def sup_violin(rows, header, outdir, real, name, dist_filter):
     colors = plt.cm.tab20.colors[:8]
     colors = colors[:5] + colors[6:]
 
-    fig, axs = plt.subplots(nrows=4, ncols=len(chrom_groups), figsize=(20, 6))
+    fig, axs = plt.subplots(nrows=4, ncols=len(chrom_groups), figsize=(80, 24))
     
     for i, chrom in enumerate(sorted(chrom_groups.keys())):
         cenhap_groups = group_by(chrom_groups[chrom], 'Truth cenhap')
@@ -266,25 +281,16 @@ def sup_violin(rows, header, outdir, real, name, dist_filter):
     plt.close(fig)
 
 def sup_dists(rows, outdir):
-
-    cenhaps = sorted({r["Truth cenhap"] for r in rows})
-    rows_by_cenhap = {cenhap : [r for r in rows if r["Truth cenhap"] == cenhap]
-                      for cenhap in cenhaps}
-    cmap = plt.cm.tab10
-    colors = {c: cmap(i) for i, c in enumerate(cenhaps)}
-
     plt.figure(figsize=(6, 6))
 
-    for cenhap, cenhap_rows in rows_by_cenhap.items():
-        plt.scatter([r["Minimum graph distance"] for r in cenhap_rows],
-                    [r["Minimum sampled distance"] for r in cenhap_rows],
-                    s=12, alpha=0.7, color=colors[cenhap], label=cenhap)
+    plt.scatter([r["Minimum graph distance"] for r in rows],
+                [r["Minimum sampled distance"] for r in rows],
+                s=12, alpha=0.7, color='black')
 
     plt.axline((0, 0), slope=1)
 
     plt.xlabel("Minimum graph distance", fontsize=13)
     plt.ylabel("Minimum sampled distance", fontsize=13)
-    plt.legend()
 
     plt.tight_layout()
     plt.savefig(os.path.join(outdir, "sup_dists.png"), dpi=300)
