@@ -233,8 +233,13 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                                dist_row[closest_sampled_hap]]
 
             # Dump in alignment stats as well
-            aln_stats = get_aln_stats(
-                os.path.join(aln_dir, f'{chrom}.{hap_name}.{STATS_SUFFIX}'))
+            stats_file = os.path.join(aln_dir, 
+                                      f'{chrom}.{hap_name}.{STATS_SUFFIX}')
+            if not os.path.exists(stats_file):
+                continue
+            aln_stats = get_aln_stats(stats_file)
+            if len(aln_stats) != len(ALN_COMBOS):
+                continue
             for (ref, realness, tool) in ALN_COMBOS:
                 prefix = f'{chrom}.{hap_name}.{REFS[ref]}.{realness}.{tool}'
                 items_to_write += aln_stats[prefix]
