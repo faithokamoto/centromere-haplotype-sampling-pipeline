@@ -24,7 +24,7 @@
 #SBATCH --time=8:00:00
 #
 # Array job specification:
-#SBATCH --array=1-1967
+#SBATCH --array=1-1968
 
 # Activate Conda environment
 source /private/home/${USER}/.bashrc
