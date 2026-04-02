@@ -21,7 +21,7 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=4:00:00
+#SBATCH --time=8:00:00
 #
 # Array job specification:
 #SBATCH --array=1-1967
@@ -38,4 +38,10 @@ echo "Running $hap_name on $chrom"
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 log=$DIR/log/${chrom}.${hap_name}.log
-$DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"
+
+if [ `grep -c identity "$log"` -eq 14 ]
+then
+    echo "Already done"
+else
+    $DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"
+fi
