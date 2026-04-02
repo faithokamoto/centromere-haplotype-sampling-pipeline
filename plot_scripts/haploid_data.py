@@ -33,6 +33,8 @@ General inputs, processed before specific haplotypes:
 - Pair dists (<--dist-dir>/<chrom>_r2_QC_v2_centrolign_pairwise_distance.csv).
     Expects columns for hap1, hap2, and then float distance (0-1).
     Does not expect a header line, or even symmetric lines.
+- Banned haplotypes (--banned-haplotypes).
+    Haplotypes which shouldn't be used by cenhap typing.
 
 Sample-specific inputs:
 - Haplotype sampling logs (<--log-dir>/<chrom>.<path>.guess.real.log).
@@ -281,7 +283,7 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                 correct += 1
             total += 1
 
-            print('\t'.join(str(item) for item in items_to_write), flush=True)
+            print('\t'.join(str(item) for item in items_to_write))
         print(f'{chrom} accuracy: {(100 * correct / total):2f}%', 
               file=sys.stderr)
 
