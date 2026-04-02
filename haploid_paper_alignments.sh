@@ -29,6 +29,10 @@ mkdir -p $KMER_DIR
 
 nearest_neighbor=`grep "$HAP_NAME" "$DISTS" | sed 's/,/\t/g' | sort -k3 -n | head -1 \
     | cut -f1-2 | tr "\t" "\n" | grep -v "$HAP_NAME"`
+if [ "$nearest_neighbor" == "CHM13.0" ]; then
+    # Use name of ref graph
+    nearest_neighbor=CHM13
+fi
 echo "Nearest neighbor: $nearest_neighbor"
 
 CHM13_GRAPH=$GRAPH_DIR/${CHROM}.CHM13
