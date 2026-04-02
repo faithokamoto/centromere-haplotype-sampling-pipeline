@@ -3,10 +3,13 @@
 import argparse
 import csv
 import os
+import re
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
+import seaborn
+import pandas as pd
 
 CHROM_ORDER = ['chr4', 'chr6', 'chr9', 'chr10', 'chr11', 'chr12', 'chr17']
 
@@ -58,18 +61,56 @@ def collect_metric(groups: dict, cenhaps: list, columns: list) -> dict:
 
     return data
 
-def grouped_violin(ax: plt.Axes, cenhaps: list, data_dict: dict,
+def _chrom_sort_key(val):
+    """
+    Sorting key for chromosome labels like:
+    chr1, chr2, ..., chr22, chrX, chrY, chrM
+    """
+    if val is None:
+        return (99, "")
+
+    s = str(val).lower()
+
+    match = re.match(r"chr(\d+|x|y|m)$", s)
+    if match:
+        token = match.group(1)
+        if token.isdigit():
+            return (0, int(token))  # numeric chromosomes first
+        special_map = {"x": 23, "y": 24, "m": 25}
+        return (0, special_map.get(token, 99))
+
+    # fallback: non-standard labels go last, alphabetical
+    return (1, s)
+
+def grouped_violin(ax: plt.Axes, groups: list, data_dict: dict,
                    columns: list, colors: list) -> None:
-    """Make a violin plot grouped by cenhap."""
+    """Grouped violin plot with stripplot overlay and chromosome sorting."""
+
+    # ---- sort groups ----
+    try:
+        sorted_groups = sorted(groups, key=_chrom_sort_key)
+    except Exception:
+        sorted_groups = groups
+
+    group_index_map = {g: i for i, g in enumerate(groups)}
+
     width = 0.8
     n = len(columns)
     offsets = np.linspace(-width / 2, width / 2, n)
 
     for i, col in enumerate(columns):
-        pos = np.arange(len(cenhaps)) + offsets[i]
+        reordered_data = []
 
+        for g in sorted_groups:
+            original_idx = group_index_map[g]
+            values = data_dict[col][original_idx]
+            reordered_data.append(values)
+
+        pos = np.arange(len(sorted_groups)) + offsets[i]
+
+        # ---- violin ----
         parts = ax.violinplot(
-            data_dict[col],
+            reordered_data,
             positions=pos,
             widths=width / n,
             showmeans=True,
@@ -79,14 +120,32 @@ def grouped_violin(ax: plt.Axes, cenhaps: list, data_dict: dict,
         for pc in parts['bodies']:
             pc.set_facecolor(colors[i])
             pc.set_edgecolor('black')
-            pc.set_alpha(0.85)
-        
+            pc.set_alpha(0.6)
+
         parts['cmeans'].set_color('black')
         parts['cmeans'].set_linewidth(1.5)
 
-    ax.set_xticks(range(len(cenhaps)))
-    ax.set_xticklabels(cenhaps, rotation=45, ha='right')
-    ax.set_xlim(-0.5, len(cenhaps) - 0.5)
+        # ---- stripplot overlay (manual for alignment) ----
+        for j, values in enumerate(reordered_data):
+            x_center = pos[j]
+
+            # jitter around the violin center
+            jitter = (np.random.rand(len(values)) - 0.5) * (width / n * 0.6)
+            x_vals = np.full(len(values), x_center) + jitter
+
+            ax.scatter(
+                x_vals,
+                values,
+                color=colors[i],
+                alpha=0.6,
+                s=10,
+                edgecolors='none'
+            )
+
+    # ---- axes ----
+    ax.set_xticks(range(len(sorted_groups)))
+    ax.set_xticklabels(sorted_groups, rotation=45, ha='right')
+    ax.set_xlim(-0.5, len(sorted_groups) - 0.5)
 
 def make_heatmap(ax: plt.Axes, rows: dict):
     """Plot heatmap of cenhap typing accuracy."""
@@ -150,7 +209,7 @@ def legend_from_columns(fig: plt.Figure, columns: list, colors: list):
         basename = ' '.join(col.split()[:-2])
         handles.append(mpatches.Patch(color=c, label=basename))
     cols = (len(handles) + 1) // 2
-    fig.legend(handles=handles, loc='upper right', ncol=cols, frameon=False)
+    fig.legend(handles=handles, loc='lower right', ncol=cols, frameon=False)
 
 def filter_columns(header, col_type: str, real: bool,
                    include_all_giraffe: bool = False) -> list:
@@ -177,39 +236,34 @@ def fig5(rows, header, outdir):
     filt = [r for r in rows if r["Minimum graph distance"] < 0.2]
 
     groups = group_by(filt, 'Chromosome')
-    cenhaps = sorted(groups.keys())
+    chroms = sorted(groups.keys())
 
     id_cols = filter_columns(header, 'identity', True, False)
     cor_cols = filter_columns(header, 'correctness', True, False)
 
-    id_data = collect_metric(groups, cenhaps, id_cols)
-    cor_data = collect_metric(groups, cenhaps, cor_cols)
+    id_data = collect_metric(groups, chroms, id_cols)
+    cor_data = collect_metric(groups, chroms, cor_cols)
 
     colors = plt.cm.tab10.colors[:len(id_cols)]
 
-    fig = plt.figure(figsize=(15, 6))
-    gs = fig.add_gridspec(2, 2, width_ratios=[1, 1.5])
+    fig, axs = plt.subplots(nrows=3, ncols=1, figsize=(20, 10))
 
-    axA = fig.add_subplot(gs[:, 0])
-    axB = fig.add_subplot(gs[0, 1])
-    axC = fig.add_subplot(gs[1, 1])
+    correct_swarms(axs[0], rows)
 
-    make_heatmap(axA, [r for r in rows if r["Chromosome"] == 'chr12'])
+    grouped_violin(axs[1], chroms, id_data, id_cols, colors)
+    axs[1].set_ylabel("Identity")
 
-    grouped_violin(axB, cenhaps, id_data, id_cols, colors)
-    axB.set_ylabel("Identity")
+    grouped_violin(axs[2], chroms, cor_data, cor_cols, colors)
+    axs[2].set_ylabel("Correctness")
+    axs[2].set_xlabel("Truth cenhap")
 
-    grouped_violin(axC, cenhaps, cor_data, cor_cols, colors)
-    axC.set_ylabel("Correctness")
-    axC.set_xlabel("Truth cenhap")
-
-    panel_letter(axA, "a")
-    panel_letter(axB, "b")
-    panel_letter(axC, "c")
+    panel_letter(axs[0], "a")
+    panel_letter(axs[1], "b")
+    panel_letter(axs[2], "c")
 
     legend_from_columns(fig, id_cols, colors)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    fig.tight_layout(rect=[0, 0.03, 1, 1])
     fig.savefig(os.path.join(outdir, "fig5.png"), dpi=300)
     plt.close(fig)
 
@@ -296,6 +350,48 @@ def sup_dists(rows, outdir):
     plt.savefig(os.path.join(outdir, "sup_dists.png"), dpi=300)
     plt.close()
 
+def correct_swarms(ax, rows):
+
+    # Convert to DataFrame
+    df = pd.DataFrame(rows)
+
+    # Drop rows missing required values
+    df = df.dropna(subset=[
+        "Chromosome",
+        "Minimum graph distance",
+        "Truth cenhap",
+        "Guessed cenhap"
+    ])
+
+    # Add correctness column
+    df["Correctness"] = df.apply(
+        lambda r: "Correct" if r["Truth cenhap"] == r["Guessed cenhap"] else "Incorrect",
+        axis=1
+    )
+
+    # Sort chromosomes for nicer plotting (optional)
+    try:
+        df["Chromosome"] = pd.Categorical(
+            df["Chromosome"],
+            categories=sorted(df["Chromosome"].unique(), key=_chrom_sort_key),
+            ordered=True
+        )
+    except Exception:
+        pass
+
+    seaborn.swarmplot(
+        data=df,
+        x="Chromosome",
+        y="Minimum graph distance",
+        hue="Correctness",
+        dodge=True,   # <-- this gives two side-by-side swarms per chromosome
+        alpha=0.7,
+        size=3,
+        ax=ax
+    )
+
+    ax.set_ylabel("All-pairs distance to neighbor")
+
 def sup_correctness(rows, outdir):
     # Identify all correctness column pairs
     keys = rows[0].keys()
@@ -337,27 +433,3 @@ if __name__ == '__main__':
     rows, header = read_tsv(args.input_tsv)
 
     fig5(rows, header, args.output_dir)
-
-    sup_violin(rows, header, args.output_dir, True,
-               "sup_real_02.png", lambda d: d < 0.2)
-
-    sup_violin(rows, header, args.output_dir, True,
-               "sup_real_02_04.png", lambda d: 0.2 < d < 0.4)
-
-    sup_violin(rows, header, args.output_dir, True,
-               "sup_real_04.png", lambda d: d > 0.4)
-    
-    sup_violin(rows, header, args.output_dir, False,
-               "sup_sim_02.png", lambda d: d < 0.2)
-
-    sup_violin(rows, header, args.output_dir, False,
-               "sup_sim_02_04.png", lambda d: 0.2 < d < 0.4)
-
-    sup_violin(rows, header, args.output_dir, False,
-               "sup_sim_04.png", lambda d: d > 0.4)
-
-    sup_dists(rows, args.output_dir)
-
-    sup_correctness(rows, args.output_dir)
-
-    sup_haploid_heatmaps(rows, args.output_dir)

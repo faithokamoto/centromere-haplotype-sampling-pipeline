@@ -10,7 +10,7 @@ undergone [haplotype sampling][HaplotypeSampling].
 Then do
 ```bash
 conda create -n cenhap-sample -c conda-forge -c bioconda \
-    kmc matplotlib minimap2 samtools
+    kmc matplotlib minimap2 samtools seaborn
 ```
 
 ## Background
