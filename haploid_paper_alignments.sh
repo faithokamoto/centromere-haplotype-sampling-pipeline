@@ -51,47 +51,47 @@ GUESS_LOG=$GRAPH_DIR/${PREFIX}.guess
 
 # align to own haplotype
 ./helper_scripts/align_reads_minimap2.sh "$OWN_HAP_GRAPH" \
-    ${READS}.real.fastq ${OWN_HAP_ALN}.real.minimap2
+    ${READS}.real.fastq.gz ${OWN_HAP_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${OWN_HAP_GRAPH}.gbz \
-    ${READS}.real.fastq ${OWN_HAP_ALN}.real.giraffe
+    ${READS}.real.fastq.gz ${OWN_HAP_ALN}.real.giraffe
 
 # align to CHM13
 ./helper_scripts/align_reads_minimap2.sh "$CHM13_GRAPH" \
-    ${READS}.real.fastq ${CHM13_ALN}.real.minimap2
+    ${READS}.real.fastq.gz ${CHM13_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${CHM13_GRAPH}.gbz \
-    ${READS}.real.fastq ${CHM13_ALN}.real.giraffe
+    ${READS}.real.fastq.gz ${CHM13_ALN}.real.giraffe
 
 # align to nearest neighbor
 ./helper_scripts/align_reads_minimap2.sh "$NEIGHBOR_GRAPH" \
-    ${READS}.real.fastq ${NEIGHBOR_ALN}.real.minimap2
+    ${READS}.real.fastq.gz ${NEIGHBOR_ALN}.real.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${NEIGHBOR_GRAPH}.gbz \
-    ${READS}.real.fastq ${NEIGHBOR_ALN}.real.giraffe
+    ${READS}.real.fastq.gz ${NEIGHBOR_ALN}.real.giraffe
 
 # ---- basic alignments (sim reads) ----
 
 # align to own haplotype
 ./helper_scripts/align_reads_minimap2.sh "$OWN_HAP_GRAPH" \
-    ${READS}.sim.fastq ${OWN_HAP_ALN}.sim.minimap2
+    ${READS}.sim.fastq.gz ${OWN_HAP_ALN}.sim.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${OWN_HAP_GRAPH}.gbz \
-    ${READS}.sim.fastq ${OWN_HAP_ALN}.sim.giraffe
+    ${READS}.sim.fastq.gz ${OWN_HAP_ALN}.sim.giraffe
 
 # align to CHM13
 ./helper_scripts/align_reads_minimap2.sh "$CHM13_GRAPH" \
-    ${READS}.sim.fastq ${CHM13_ALN}.sim.minimap2
+    ${READS}.sim.fastq.gz ${CHM13_ALN}.sim.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${CHM13_GRAPH}.gbz \
-    ${READS}.sim.fastq ${CHM13_ALN}.sim.giraffe
+    ${READS}.sim.fastq.gz ${CHM13_ALN}.sim.giraffe
 
 # align to nearest neighbor
 ./helper_scripts/align_reads_minimap2.sh "$NEIGHBOR_GRAPH" \
-    ${READS}.sim.fastq ${NEIGHBOR_ALN}.sim.minimap2
+    ${READS}.sim.fastq.gz ${NEIGHBOR_ALN}.sim.minimap2
 ./helper_scripts/align_reads_giraffe.sh ${NEIGHBOR_GRAPH}.gbz \
-    ${READS}.sim.fastq ${NEIGHBOR_ALN}.sim.giraffe
+    ${READS}.sim.fastq.gz ${NEIGHBOR_ALN}.sim.giraffe
 
 # ---- align to to haplotype-sampled graphs (real) ----
 
 echo "Haplotype sampling on real reads"
 
-kmc -k29 -m128 -okff -t16 -hp ${READS}.real.fastq \
+kmc -k29 -m128 -okff -t16 -hp ${READS}.real.fastq.gz \
     $KMER_DIR/${PREFIX}.real "$KMER_DIR"
 
 # Sample 5 haps without alignment, so we can guess ideal # to sample
@@ -112,13 +112,13 @@ vg haplotypes -k $KMER_DIR/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
 vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.real.gbz 2> /dev/null
 
-./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz ${READS}.real.fastq ${SAMPLED_ALN}.real.giraffe
+./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz ${READS}.real.fastq.gz ${SAMPLED_ALN}.real.giraffe
 
 # ---- align to to haplotype-sampled graphs (sim) ----
 
 echo "Haplotype sampling on sim reads"
 
-kmc -k29 -m128 -okff -t16 -hp ${READS}.sim.fastq \
+kmc -k29 -m128 -okff -t16 -hp ${READS}.sim.fastq.gz \
     $KMER_DIR/${PREFIX}.sim "$KMER_DIR"
 
 # Sample 5 haps without alignment, so we can guess ideal # to sample
@@ -139,11 +139,11 @@ vg haplotypes -k $KMER_DIR/${PREFIX}.sim.kff -i ${BIG_GRAPH}.hapl \
 vg autoindex --prefix ${SAMPLED_GRAPH}.sim --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.sim.gbz 2> /dev/null
 
-./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.sim.gbz ${READS}.sim.fastq ${SAMPLED_ALN}.sim.giraffe
+./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.sim.gbz ${READS}.sim.fastq.gz ${SAMPLED_ALN}.sim.giraffe
 
 # ---- get stats! ----
 
-./helper_scripts/calculate_alignment_stats.py -c "$CHROM" -n "$HAP_NAME" \
+./helper_scripts/calculate_alignment_stats.py -c "$CHROM" -n "$HAP_NAME" -l ${GUESS_LOG}.real.log \
     -g ${BIG_GRAPH}.gfa -r $PROJ_DIR/to_align -a "$ALN_DIR" > $ALN_DIR/${PREFIX}.stats.log
 
 cat $ALN_DIR/${PREFIX}.stats.log
