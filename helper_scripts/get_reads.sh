@@ -3,8 +3,6 @@
 # Usage: get_reads.sh <sample ID>
 # Example: get_reads.sh HG00099
 
-set -e
-
 SAMPLE_ID=$1
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
