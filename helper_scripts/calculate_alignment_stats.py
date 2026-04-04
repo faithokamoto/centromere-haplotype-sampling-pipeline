@@ -39,7 +39,7 @@ where as the haplotype was not removed, the private nodes are also required.
 
 import argparse # Command line argument parsing
 import os # Filesystem interactions
-from typing import Dict, Set, Tuple # Type hints
+from typing import Dict, List, Set, Tuple # Type hints
 
 REFS = [('CHM13', 'chm13'), 
         ('Neighbor', 'neighbor'), 
@@ -59,6 +59,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('-n', '--hap-name', help='Haplotype reads are from')
     parser.add_argument('-r', '--reads-dir', help='Directory with truth TSVs')
     parser.add_argument('-a', '--aln-dir', help='Directory with aligments')
+    parser.add_argument('-l', '--sampling-log', 
+                        help='Real read haplotype sampling logfile')
     return parser.parse_args()
 
 def parse_node_list(node_str: str) -> Set[int]:
@@ -66,10 +68,9 @@ def parse_node_list(node_str: str) -> Set[int]:
     return {int(node.rstrip('+-')) for node 
             in node_str.strip().split(',') if node}
 
-def find_private_nodes(gfa_file: str, hap_name: str) -> Set[int]:
-    """Use GFA file to find nodes private to a haplotype."""
-    on_this_hap = set()
-    on_other_haps = set()
+def read_nodes(gfa_file: str) -> Dict[str, Set[int]]:
+    """Read nodes for each haplotype in a GFA"""
+    hap_nodes = dict()
 
     with open(gfa_file) as f:
         for line in f:
@@ -79,15 +80,28 @@ def find_private_nodes(gfa_file: str, hap_name: str) -> Set[int]:
             parts = line.rstrip().split()
             # Extract hap name from <sample ID>#<hap num>#<contig>
             cur_hap_name = parts[1].split('#')[-1]
-            nodes = parse_node_list(parts[2])
-
-            if cur_hap_name == hap_name:
-                on_this_hap = nodes
-            else:
-                on_other_haps |= nodes
+            hap_nodes[cur_hap_name] = parse_node_list(parts[2])
     
-    # Subset to only private nodes
-    return (on_this_hap - on_other_haps)
+    return hap_nodes
+
+def find_private_nodes(all_nodes: Dict[str, Set[int]], hap_name: str,
+                       haps_to_consider: Set[str] = None) -> Set[int]:
+    """Find which nodes are private to a particular haplotype.
+    
+    If haps_to_consider is provided, only consider those haplotypes.
+    """
+    seen_elsewhere = set()
+    if not haps_to_consider:
+        # Default to all other haplotypes
+        haps_to_consider = set(all_nodes.keys())
+    
+    haps_to_consider.remove(hap_name)
+
+    for other in all_nodes.keys():
+        if other in haps_to_consider:
+            seen_elsewhere |= all_nodes[other]
+    
+    return (all_nodes[hap_name] - seen_elsewhere)
 
 def load_truth_nodes(read_tsv: str) -> Dict[str, Set[int]]:
     """Load the truth node positions for read set.
@@ -106,6 +120,29 @@ def load_truth_nodes(read_tsv: str) -> Dict[str, Set[int]]:
                 truth_nodes[parts[0]] = parse_node_list(parts[1])
 
     return truth_nodes
+
+def get_guesses(log_file: str) -> List[str]:
+    """Look up the sampled haplotypes.
+    
+    Pulls specific sampled haplotypes via
+        Selected haplotype <name> with score <score>
+    And grabs the exact number used via
+        Best guess: use <n> haplotypes & sample cenhap = <cenhap>
+
+    Returns a list of the haplotypes selected, in order
+    """
+
+    sampled_haps = []
+    n_haps = None
+    with open(log_file) as file:
+        for line in file:
+            parts = line.strip().split()
+            if line.startswith('Selected haplotype'):
+                sampled_haps.append(parts[2])
+            elif line.startswith('Best guess'):
+                n_haps = int(parts[3])
+            
+    return sampled_haps[:n_haps]
 
 def calc_identity_correctness(truth_nodes: Dict[str, Set[int]], 
                               private_nodes: Set[int],
@@ -200,10 +237,33 @@ def print_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
     print(f'{no_dir_prefix}: identity {identity} / correctness {correctness} /'
           f' runtime {runtime} / memory {memory}')
 
+def print_private_depth(all_nodes: Dict[str, Set[int]], sampling_log: str,
+                        aln_tsv_file: str) -> List[float]:
+    """Print average coverage for each haplotype's private nodes.
+    
+    Each haplotype chosen by the sampler will contribute some nodes.
+    If its private nodes are often used, that indicates its sequence
+    was useful for alignment. Thus, for private nodes, find the depth
+    for each haplotype, in order.
+    """
+
+    sampled_haps = get_guesses(sampling_log)
+    with open(aln_tsv_file) as file:
+        for hap in sampled_haps:
+            priv_nodes = find_private_nodes(all_nodes, hap, set(sampled_haps))
+            coverage = 0
+            for line in file:
+                for node in line.strip().split('\t')[1].split(','):
+                    node_id = node.rstrip('+-')
+                    if node_id in priv_nodes:
+                        coverage += 1
+            print(f'{hap} has average depth {coverage / len(priv_nodes)}')
+
 if __name__ == '__main__':
     args = parse_args()
     # Needed across alignment files
-    priv_nodes = find_private_nodes(args.gfa, args.hap_name)
+    all_nodes = read_nodes(args.gfa)
+    priv_nodes = find_private_nodes(all_nodes, args.hap_name)
     
     for realness in ['real', 'sim']:
         # Needed across alignment files of a realness
@@ -221,3 +281,7 @@ if __name__ == '__main__':
                 aln_prefix = os.path.join(args.aln_dir,
                         f'{args.chrom}.{args.hap_name}.{ref}.{realness}.{tool}')
                 print_aln_stats(truth_nodes, priv_nodes, aln_prefix, req_priv)
+    
+    real_sampled_tsv = os.path.join(args.aln_dir,
+                       f'{args.chrom}.{args.hap_name}.sampled.real.giraffe.tsv')
+    print_private_depth(all_nodes, args.sampling_log, real_sampled_tsv)
