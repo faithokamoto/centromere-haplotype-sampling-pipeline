@@ -10,6 +10,8 @@ vg convert --gfa-in $GRAPH.gfa | vg mod --chop 1024 - > $GRAPH.pg
 # Convert to GBZ format by smooshing GBWT and VG together
 vg gbwt --index-paths -x $GRAPH.pg -o $GRAPH.gbwt
 vg gbwt --gbz-format -x $GRAPH.pg $GRAPH.gbwt -g $GRAPH.gbz
+# We also need GFA format for knowing node IDs on paths
+vg convert --gfa-out $GRAPH.gbz > $GRAPH.gbz.gfa
 
 vg gbwt -r $GRAPH.ri -Z $GRAPH.gbz
 # Distanceless index is much quicker to make and works for vg haplotypes
