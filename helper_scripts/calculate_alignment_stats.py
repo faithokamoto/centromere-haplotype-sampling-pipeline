@@ -252,9 +252,11 @@ def print_private_depth(all_nodes: Dict[str, Set[int]], sampling_log: str,
         for hap in sampled_haps:
             priv_nodes = find_private_nodes(all_nodes, hap, set(sampled_haps))
             coverage = 0
+            file.readline() # Ignore header
             for line in file:
-                for node in line.strip().split('\t')[1].split(','):
-                    node_id = node.rstrip('+-')
+                node_list = line.strip().split('\t')[2]
+                for node in node_list.split(',')[:-1]: # Ignore trailing comma
+                    node_id = int(node.rstrip('+-'))
                     if node_id in priv_nodes:
                         coverage += 1
             print(f'{hap} has average depth {coverage / len(priv_nodes)}')
