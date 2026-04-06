@@ -39,6 +39,7 @@ where as the haplotype was not removed, the private nodes are also required.
 
 import argparse # Command line argument parsing
 import os # Filesystem interactions
+import re # Parsing walks (annoying format)
 from typing import Dict, List, Set, Tuple # Type hints
 
 REFS = [('CHM13', 'chm13'), 
@@ -68,20 +69,28 @@ def parse_node_list(node_str: str) -> Set[int]:
     return {int(node.rstrip('+-')) for node 
             in node_str.strip().split(',') if node}
 
+def parse_walk(walk: str) -> Set[int]:
+    """Parse a W-line walk string like >12<34>56 into node IDs"""
+    nodes = set()
+    for match in re.finditer(r'[><](\d+)', walk):
+        nodes.add(int(match.group(1)))
+    return nodes
+
 def read_nodes(gfa_file: str) -> Dict[str, Set[int]]:
-    """Read nodes for each haplotype in a GFA"""
-    hap_nodes = dict()
+    """Read nodes for each haplotype from W lines in a GFA"""
+    hap_nodes = {}
 
     with open(gfa_file) as f:
         for line in f:
-            if not line.startswith('P'):
+            if not line.startswith('W'):
                 continue
 
             parts = line.rstrip().split()
-            # Extract hap name from <sample ID>#<hap num>#<contig>
-            cur_hap_name = parts[1].split('#')[-1]
-            hap_nodes[cur_hap_name] = parse_node_list(parts[2])
-    
+            sample_id = parts[1]
+            hap_index = parts[2]
+            walk = parts[6]
+            hap_nodes[f"{sample_id}.{hap_index}"] = parse_walk(walk)
+
     return hap_nodes
 
 def find_private_nodes(all_nodes: Dict[str, Set[int]], hap_name: str,
@@ -239,30 +248,30 @@ def print_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
 
 def print_private_depth(all_nodes: Dict[str, Set[int]], sampling_log: str,
                         aln_tsv_file: str) -> List[float]:
-    """Print average coverage for each haplotype's private nodes.
-    
-    Each haplotype chosen by the sampler will contribute some nodes.
-    If its private nodes are often used, that indicates its sequence
-    was useful for alignment. Thus, for private nodes, find the depth
-    for each haplotype, in order.
-    """
+    """Print average coverage for each haplotype's private nodes (single pass)."""
 
     sampled_haps = get_guesses(sampling_log)
+    # Precompute private nodes for each hap
+    hap_private = {}
+    for hap in sampled_haps:
+        hap_private[hap] = find_private_nodes(all_nodes, hap, set(sampled_haps))
+    coverage = {hap : 0 for hap in hap_private.keys()}
+
     with open(aln_tsv_file) as file:
-        file.readline() # Ignore header
-        file_start = file.tell()
-        for hap in sampled_haps:
-            priv_nodes = find_private_nodes(all_nodes, hap, set(sampled_haps))
-            coverage = 0
-            # Go back to the start
-            file.seek(file_start)
-            for line in file:
-                node_list = line.strip().split('\t')[2]
-                for node in node_list.split(',')[:-1]: # Ignore trailing comma
-                    node_id = int(node.rstrip('+-'))
+        file.readline()  # Skip header
+        for line in file:
+            node_list = line.strip().split('\t')[2]
+            for node in node_list.split(',')[:-1]:  # Ignore trailing comma
+                node_id = int(node.rstrip('+-'))
+
+                for hap, priv_nodes in hap_private.items():
                     if node_id in priv_nodes:
-                        coverage += 1
-            print(f'{hap} has average depth {coverage / len(priv_nodes)}')
+                        coverage[hap] += 1
+
+    for hap in sampled_haps:
+        priv_nodes = hap_private[hap]
+        avg = coverage[hap] / len(priv_nodes) if priv_nodes else 0.0
+        print(f'{hap} has average depth {avg}')
 
 if __name__ == '__main__':
     args = parse_args()
