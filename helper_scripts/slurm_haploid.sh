@@ -21,27 +21,29 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=8:00:00
+#SBATCH --time=6:00:00
 #
 # Array job specification:
-#SBATCH --array=1-1968
+#SBATCH --array=1-124
 
 # Activate Conda environment
 source /private/home/${USER}/.bashrc
 source activate cenhap-sample
 
 HAP_GRAPH_DIR=/private/groups/patenlab/fokamoto/centrolign/graph/haploid
-cur_hap_graph=`ls $HAP_GRAPH_DIR/*.*.1.gbz $HAP_GRAPH_DIR/*.*.2.gbz | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -f9 -d "/"`
+cur_hap_graph=`ls $HAP_GRAPH_DIR/chr4.*.1.gbz $HAP_GRAPH_DIR/chr4.*.2.gbz | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -f9 -d "/"`
 chrom=`echo "$cur_hap_graph" | cut -f1 -d "."`
 hap_name=`echo "$cur_hap_graph" | cut -f2,3 -d "."`
 echo "Running $hap_name on $chrom"
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
-log=$DIR/log/${chrom}.${hap_name}.log
 
-if [ `grep -c identity "$log"` -eq 14 ]
+if [ `echo $hap_name | cut -f1 -d "."` == "HG002" ]
 then
-    echo "Already done"
+    echo "HG002; ignore"
 else
+    log=$DIR/log/${chrom}/${chrom}.${hap_name}.log
     $DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"
 fi
+
+
