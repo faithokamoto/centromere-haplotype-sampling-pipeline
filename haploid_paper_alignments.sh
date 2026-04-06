@@ -144,10 +144,10 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.sim --no-guessing \
 # ---- get stats! ----
 
 ./helper_scripts/calculate_alignment_stats.py -c "$CHROM" -n "$HAP_NAME" -l ${GUESS_LOG}.real.log \
-    -g ${BIG_GRAPH}.gfa -r $PROJ_DIR/to_align -a "$ALN_DIR" > $ALN_DIR/${PREFIX}.stats.log
+    -g ${BIG_GRAPH}.gbz.gfa -r $PROJ_DIR/to_align -a "$ALN_DIR" > $ALN_DIR/${PREFIX}.stats.log
 
 cat $ALN_DIR/${PREFIX}.stats.log
 
 # Clean up behind for space reasons
-rm $ALN_DIR/${PREFIX}.*.gam $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam $ALN_DIR/${PREFIX}.*.tsv
+rm $ALN_DIR/${PREFIX}.*.gam $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam
 rm -rf "$KMER_DIR"
