@@ -249,10 +249,13 @@ def print_private_depth(all_nodes: Dict[str, Set[int]], sampling_log: str,
 
     sampled_haps = get_guesses(sampling_log)
     with open(aln_tsv_file) as file:
+        file.readline() # Ignore header
+        file_start = file.tell()
         for hap in sampled_haps:
             priv_nodes = find_private_nodes(all_nodes, hap, set(sampled_haps))
             coverage = 0
-            file.readline() # Ignore header
+            # Go back to the start
+            file.seek(file_start)
             for line in file:
                 node_list = line.strip().split('\t')[2]
                 for node in node_list.split(',')[:-1]: # Ignore trailing comma
