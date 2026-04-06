@@ -259,8 +259,11 @@ def print_private_depth(all_nodes: Dict[str, Set[int]], sampling_log: str,
     with open(aln_tsv_file) as file:
         file.readline()  # Skip header
         for line in file:
-            node_list = line.strip().split('\t')[2]
-            for node in node_list.split(',')[:-1]:  # Ignore trailing comma
+            parts = line.strip().split('\t')
+            if len(parts) < 3:
+                # Unaligned reads have no node list; skip
+                continue
+            for node in parts[2].split(',')[:-1]:  # Ignore trailing comma
                 node_id = int(node.rstrip('+-'))
 
                 for hap, priv_nodes in hap_private.items():
