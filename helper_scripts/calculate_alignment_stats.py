@@ -4,8 +4,7 @@
 == Inputs ==
 
 - GFA file with haplotype paths (--gfa).
-    Expects all haplotypes as P lines; ignores all other lines.
-    The node list is allowed to end with a comma.
+    Expects all haplotypes as W lines; ignores all other lines.
     https://gfa-spec.github.io/GFA-spec/GFA1.html
 - Truth read positions (<--reads-dir>/<chrom>.<hap>.<realness>.tsv).
     Expects columns for read name and then comma-separated nodes.
@@ -248,7 +247,7 @@ def print_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
 
 def print_private_depth(all_nodes: Dict[str, Set[int]], sampling_log: str,
                         aln_tsv_file: str) -> List[float]:
-    """Print average coverage for each haplotype's private nodes (single pass)."""
+    """Print average coverage for each haplotype's private nodes."""
 
     sampled_haps = get_guesses(sampling_log)
     # Precompute private nodes for each hap
