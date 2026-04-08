@@ -183,7 +183,7 @@ def calc_identity_correctness(truth_nodes: Dict[str, Set[int]],
             elif len(parts) == 3:
                 aln_nodes = parse_node_list(parts[2])
                 if parts[0] in truth_nodes:
-                    truth = truth_nodes[parts[0]]
+                    truth = set(truth_nodes[parts[0]])
 
                     if not req_private:
                         # Don't require alignments to private nodes
@@ -197,7 +197,10 @@ def calc_identity_correctness(truth_nodes: Dict[str, Set[int]],
             else:
                 raise ValueError(f'No nodes in line from {aln_tsv_file}')
     mean_identity = sum(identity) / len(identity)
-    mean_correctness = sum(correctness) / len(correctness)
+    if correctness:
+        mean_correctness = sum(correctness) / len(correctness)
+    else:
+        mean_correctness = None
     return mean_identity, mean_correctness
 
 def get_runtime_memory(aln_log_file: str) -> Tuple[float, float]:
