@@ -18,32 +18,24 @@
 #SBATCH --ntasks=20
 #
 # Standard output and error log
-#SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
+#SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
 #SBATCH --time=8:00:00
 #
 # Array job specification:
-#SBATCH --array=1-1984
+#SBATCH --array=1-1970
 
 # Activate Conda environment
 source /private/home/${USER}/.bashrc
 source activate cenhap-sample
 
-HAP_GRAPH_DIR=/private/groups/patenlab/fokamoto/centrolign/graph/haploid
-cur_hap_graph=`ls $HAP_GRAPH_DIR/*.*.1.gbz $HAP_GRAPH_DIR/*.*.2.gbz | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -f9 -d "/"`
-chrom=`echo "$cur_hap_graph" | cut -f1 -d "."`
-hap_name=`echo "$cur_hap_graph" | cut -f2,3 -d "."`
+READS_DIR=/private/groups/patenlab/fokamoto/centrolign/to_align
+cur_file=`ls $READS_DIR/*.real.fastq.gz | head -n "$SLURM_ARRAY_TASK_ID" | tail -n 1 | cut -f8 -d "/"`
+chrom=`echo "$cur_file" | cut -f1 -d "."`
+hap_name=`echo "$cur_file" | cut -f2,3 -d "."`
 echo "Running $hap_name on $chrom"
 
-DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
-
-if [ `echo $hap_name | cut -f1 -d "."` == "HG002" ]
-then
-    echo "HG002; ignore"
-else
-    log=$DIR/log/${chrom}/${chrom}.${hap_name}.log
-    $DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"
-fi
-
-
+LOCAL_DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
+log=$LOCAL_DIR/log/${chrom}/${chrom}.${hap_name}.log
+$LOCAL_DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"

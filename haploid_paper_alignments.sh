@@ -25,7 +25,8 @@ GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
 KMER_DIR=$PROJ_DIR/kmers/$PREFIX
 
-mkdir -p $KMER_DIR
+rm -rf "$KMER_DIR"
+mkdir $KMER_DIR
 
 nearest_neighbor=`grep "$HAP_NAME" "$DISTS" | sed 's/,/\t/g' | sort -k3 -n | head -1 \
     | cut -f1-2 | tr "\t" "\n" | grep -v "$HAP_NAME"`
@@ -46,6 +47,8 @@ CHM13_ALN=$ALN_DIR/${PREFIX}.CHM13
 SAMPLED_ALN=$ALN_DIR/${PREFIX}.sampled
 
 GUESS_LOG=$GRAPH_DIR/${PREFIX}.guess
+
+ABSENT_SCORE=0.05
 
 # ---- basic alignments (real reads) ----
 
@@ -96,7 +99,7 @@ kmc -k29 -m128 -okff -t16 -hp ${READS}.real.fastq.gz \
 
 # Sample 5 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
+    --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score $ABSENT_SCORE \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
 # Use logfile to guess
@@ -107,7 +110,7 @@ cat ${GUESS_LOG}.real.log
 n_to_sample=`fgrep Best ${GUESS_LOG}.real.log | cut -d " " -f4`
 
 vg haplotypes -k $KMER_DIR/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
+    --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score $ABSENT_SCORE \
     -g ${SAMPLED_GRAPH}.real.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
 vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.real.gbz 2> /dev/null
@@ -123,7 +126,7 @@ kmc -k29 -m128 -okff -t16 -hp ${READS}.sim.fastq.gz \
 
 # Sample 5 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${PREFIX}.sim.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist \
+    --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score $ABSENT_SCORE \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.sim.log
 
 # Use logfile to guess
@@ -134,7 +137,7 @@ cat ${GUESS_LOG}.sim.log
 n_to_sample=`fgrep Best ${GUESS_LOG}.sim.log | cut -d " " -f4`
 
 vg haplotypes -k $KMER_DIR/${PREFIX}.sim.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist \
+    --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score $ABSENT_SCORE \
     -g ${SAMPLED_GRAPH}.sim.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
 vg autoindex --prefix ${SAMPLED_GRAPH}.sim --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.sim.gbz 2> /dev/null
