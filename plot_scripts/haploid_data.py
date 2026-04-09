@@ -193,7 +193,10 @@ def get_aln_stats(log_file: str) -> Dict[str, List[float]]:
 
             prefix = parts[0].rstrip(':')
             identity = float(parts[2])
-            correctness = float(parts[5])
+            if parts[5] == 'None':
+                correctness = None
+            else:
+                correctness = float(parts[5])
             runtime = float(parts[8])
             memory = float(parts[11])
 
@@ -268,6 +271,8 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
 
             # Dump in alignment stats as well
             aln_stats = get_aln_stats(stats_file)
+            if len(ALN_COMBOS) != len(aln_stats):
+                continue
             for (ref, realness, tool) in ALN_COMBOS:
                 prefix = f'{chrom}.{hap_name}.{REFS[ref]}.{realness}.{tool}'
                 items_to_write += aln_stats[prefix]
@@ -277,7 +282,7 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
             total += 1
 
             print('\t'.join(str(item) for item in items_to_write))
-        print(f'{chrom} accuracy: {(100 * correct / total):2f}%', 
+        print(f'{chrom} accuracy: {(100 * correct / total):.2f}%', 
               file=sys.stderr)
 
 if __name__ == '__main__':
