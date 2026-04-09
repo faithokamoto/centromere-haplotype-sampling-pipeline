@@ -25,10 +25,9 @@ READS=$PROJ_DIR/to_align/$PREFIX
 
 GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
-KMER_DIR=$PROJ_DIR/kmers/$PREFIX
 
-rm -rf "$KMER_DIR"
-mkdir $KMER_DIR
+KMER_DIR=$TMPDIR/faith_$PREFIX
+mkdir -p $SAMPLE_TMP
 
 nearest_neighbor=`grep "$HAP_NAME" "$DISTS" | sed 's/,/\t/g' | sort -k3 -n | head -1 \
     | cut -f1-2 | tr "\t" "\n" | grep -v "$HAP_NAME"`
