@@ -12,7 +12,7 @@
 #SBATCH --nodes=1
 #
 # Memory needed for the jobs.  Try very hard to make this accurate.  DEFAULT = 4gb
-#SBATCH --mem=4gb
+#SBATCH --mem=10gb
 #
 # Number of tasks (one for each CPU desired for use case) (example):
 #SBATCH --ntasks=1
@@ -21,7 +21,7 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=5:00
+#SBATCH --time=10:00
 #
 # Array job specification:
 #SBATCH --array=1-784
