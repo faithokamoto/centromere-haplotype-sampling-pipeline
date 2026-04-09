@@ -5,7 +5,8 @@ undergone [haplotype sampling][HaplotypeSampling].
 
 ## Dependencies
 
-- [`vg`][vg]: currently version v`1.72.0` with a few modifications
+[`vg`][vg] currently version `v1.73.0-33-gbf85ab04b` with an extra debugging
+information ([this print][ExtraPrint]) turned on
 
 Then do
 ```bash
@@ -61,15 +62,15 @@ for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
     - `guess_n_and_cenhap.py`: guess optimal *n* value and cenhap of input
     - `haploid_paper_alignments.sh`: run the alignments
 - **Plotting**
-    - `haploid_data.py`: calculate stats using all the outputs
-    - `plot_identity_and_accuracy.py`: plot ID % and SNV calling across *n*s
-    - `plot_variants_vs_dist.py`: four-panel plot for a sample with variant info
+    - `haploid_data.py`: calculate haploid alignment & typing stats
+    - `diploid_data.py`: calculate diploid typing stats
 - **Metadata**
     - `.gitignore`: some files that I don't feel like putting on version control
     - `LICENSE`: the MIT license as it applies to this repository
     - `README.md`: this file, which explains the repository
 
 [Centrolign]: https://github.com/jeizenga/centrolign
+[ExtraPrint]: https://github.com/vgteam/vg/blob/bf85ab04b251e7a2bc308750d6c8c44afda213f5/src/recombinator.cpp#L12
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling
 [LRgiraffe]: https://doi.org/10.1101/2025.09.29.678807
 [SelectionCode]: https://github.com/vgteam/vg/blob/2e664f07e49caca29a208b3b0f2f25c7100df5e9/src/recombinator.cpp#L2056-L2058
