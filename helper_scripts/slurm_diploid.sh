@@ -32,12 +32,12 @@ DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 source /private/home/${USER}/.bashrc
 source activate cenhap-sample
 
-HAP_GRAPH_DIR=/private/groups/patenlab/fokamoto/centrolign/graph/haploid
-combo=`ls $HAP_GRAPH_DIR/*.*.1.gbz $HAP_GRAPH_DIR/*.*.2.gbz | cut -f9 -d "/" | cut -f1-2 -d "." | uniq -c \
+READS_DIR=/private/groups/patenlab/fokamoto/centrolign/to_align
+combo=`ls $READS_DIR/*.real.fastq.gz | cut -f8 -d "/" | cut -f1-2 -d "." | uniq -c \
     | fgrep -v "1 chr" | head -n "$SLURM_ARRAY_TASK_ID" | tail -1 | sed "s/      2 //g"`
 chrom=`echo "$combo" | cut -f1 -d "."`
 sample_id=`echo "$combo" | cut -f2 -d "."`
 echo "Running $sample_id on $chrom"
 
-log=$DIR/log/${chrom}.${sample_id}.typing.log
+log=$DIR/log/diploid_typing/${chrom}.${sample_id}.typing.log
 $DIR/diploid_paper_typing.sh "$sample_id" "$chrom" &> "$log"

@@ -37,7 +37,7 @@ kmc -k29 -m128 -okff -t16 -hp $READS_DIR/${PREFIX}.diploid.real.fastq \
 
 # Sample 10 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $KMER_DIR/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist \
+    --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score 0.05 \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
 # Use logfile to guess
