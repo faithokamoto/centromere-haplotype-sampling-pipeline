@@ -20,23 +20,22 @@ DISTS=$MIRA_DIR/all_pairs/distance_matrices/${CHROM}_r2_QC_v2_centrolign_pairwis
 CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/${CHROM}/${CHROM}.cenhap_predictions.tsv
 
 READS_DIR=$PROJ_DIR/to_align
-KMER_DIR=$PROJ_DIR/kmers/$PREFIX
-
-mkdir -p $KMER_DIR
+SAMPLE_TMP=$TMPDIR/faith_$SAMPLE_ID
+mkdir -p $SAMPLE_TMP
 
 GUESS_LOG=$PROJ_DIR/graph/diploid/${PREFIX}.guess
 
 # ---- run typing ----
 
 # Combine haplotype-specific reads
-zcat $READS_DIR/${PREFIX}.1.real.fastq.gz $READS_DIR/${PREFIX}.2.real.fastq.gz \
-    > $READS_DIR/${PREFIX}.diploid.real.fastq
+cat $READS_DIR/${PREFIX}.1.real.fastq.gz $READS_DIR/${PREFIX}.2.real.fastq.gz \
+    > $SAMPLE_TMP/${PREFIX}.diploid.real.fastq.gz
 
-kmc -k29 -m128 -okff -t16 -hp $READS_DIR/${PREFIX}.diploid.real.fastq \
-    $KMER_DIR/${PREFIX}.real "$KMER_DIR"
+kmc -k29 -m128 -okff -t16 -hp $SAMPLE_TMP/${PREFIX}.diploid.real.fastq.gz \
+    $SAMPLE_TMP/${PREFIX}.real "$SAMPLE_TMP"
 
 # Sample 10 haps without alignment, so we can guess ideal # to sample
-vg haplotypes -k $KMER_DIR/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
+vg haplotypes -k $SAMPLE_TMP/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
     --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score 0.05 \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
@@ -46,5 +45,4 @@ vg haplotypes -k $KMER_DIR/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
 cat ${GUESS_LOG}.real.log
 
 # No need to save these
-rm $READS_DIR/${PREFIX}.diploid.real.fastq
-rm -rf $KMER_DIR
+rm $SAMPLE_TMP/${PREFIX}.diploid.real.fastq.gz
