@@ -9,6 +9,8 @@ set -e
 
 echo "Top of haploid_paper_alignments.sh with ${1} ${2} input"
 
+vg version
+
 HAP_NAME=$1
 CHROM=$2
 SAMPLE_ID=`echo "$HAP_NAME" | cut -f1 -d "." `
@@ -152,5 +154,5 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.sim --no-guessing \
 cat $ALN_DIR/${PREFIX}.stats.log
 
 # Clean up behind for space reasons
-rm $ALN_DIR/${PREFIX}.*.gam $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam
+rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam
 rm -rf "$KMER_DIR"
