@@ -15,13 +15,13 @@
 #SBATCH --mem=4gb
 #
 # Number of tasks (one for each CPU desired for use case) (example):
-#SBATCH --ntasks=20
+#SBATCH --ntasks=1
 #
 # Standard output and error log
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=5:00
+#SBATCH --time=20:00
 #
 # Array job specification:
 #SBATCH --array=1-784
