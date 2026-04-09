@@ -138,7 +138,8 @@ def guess_cenhap(sampled: List[SampledHaplotype], cenhap_table: Dict[str, str],
         # Find cenhaps in use
         cenhaps_sampled = set()
         for hap in sampled[:n_to_use]:
-            cenhaps_sampled.add(cenhap_table.get(hap.name))
+            if hap.name in cenhap_table:
+                cenhaps_sampled.add(cenhap_table.get(hap.name))
             if len(cenhaps_sampled) == 2:
                 break
         
