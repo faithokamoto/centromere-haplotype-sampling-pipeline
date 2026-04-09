@@ -17,8 +17,6 @@ General inputs, processed before specific haplotypes:
 - Truth cenhaps (<--cenhap-dir>/<chrom>/<chrom>.cenhap_predictions.tsv).
     Expects columns for path name and then cenhap, in that order.
     Also expects a header line but it will be skipped.
-- Banned haplotypes (--banned-haplotypes).
-    Haplotypes which shouldn't be used by cenhap typing.
 
 Sample-specific inputs:
 - Haplotype sampling logs (<--log-dir>/<chrom>.<sample>.guess.real.log).
@@ -41,8 +39,6 @@ def parse_args() -> argparse.Namespace:
                         help='Directory with TSVs of truth cenhap assignments')
     parser.add_argument('-l', '--log-dir',
                         help='Directory with haplotype sampling logs')
-    parser.add_argument('-b', '--banned-haplotypes', required=True,
-                        help='Haplotypes the typing algorithm may not use')
     return parser.parse_args()
 
 def read_chrom_cenhap_table(cenhap_file: str) -> Dict[str, str]:
@@ -76,25 +72,8 @@ def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
                 os.path.join(cenhap_dir, item, f'{item}.{CENHAP_SUFFIX}'))
     return cenhap_tables
 
-def read_banned_haplotypes(banned_file: str) -> Dict[str, Set[str]]:
-    """Read a list of haplotypes to not use.
-    
-    A two-column file of banned haps, with format
-        chrom  hap1,hap2,...,hapN
-    
-    Read into a dict {chrom : {hap1, hap2, ..., hapN}}
-    """
-
-    banned_haps = dict()
-    with open(banned_file) as file:
-        for line in file:
-            parts = line.strip().split()
-            banned_haps[parts[0]] = set(parts[1].split(','))
-    return banned_haps
-
 def extract_guess(cenhap_tables: Dict[str, Dict[str, str]], chrom: str,
-                  banned_haplo: Dict[str, Set[str]],
-                  log_file: str):
+                  log_file: str) -> str:
     """Guess haplotype pair."""
     guessed_cenhaps = set()
     top_score = None
@@ -111,10 +90,6 @@ def extract_guess(cenhap_tables: Dict[str, Dict[str, str]], chrom: str,
                     break
 
                 if len(guessed_cenhaps) < 2:
-                    # Skip this one if it's banned
-                    if hap_name in banned_haplo[chrom]:
-                        continue
-                    # Otherwise, look it up
                     if hap_name in cenhap_tables[chrom]:
                         this_cenhap = cenhap_tables[chrom][hap_name]
                         if not this_cenhap in guessed_cenhaps:
@@ -131,7 +106,6 @@ def extract_guess(cenhap_tables: Dict[str, Dict[str, str]], chrom: str,
 if __name__ == '__main__':
     args = parse_args()
     cenhap_tables = read_all_cenhap_tables(args.cenhap_dir)
-    banned_haplo = read_banned_haplotypes(args.banned_haplotypes)
 
     print('\t'.join(['Chromosome', 'Sample', 
                      'Truth cenhaps', 'Guessed cenhaps']))
@@ -150,6 +124,5 @@ if __name__ == '__main__':
             guess_log = os.path.join(args.log_dir, 
                                      f'{chrom}.{sample}.{GUESS_SUFFIX}')
             if os.path.exists(guess_log):
-                guessed_cenhaps = extract_guess(cenhap_tables, chrom, 
-                                                banned_haplo, guess_log)
-                print('\t'.join([chrom, sample, true_cenhaps, guessed_cenhaps]), flush=True)
+                guessed_cenhaps = extract_guess(cenhap_tables, chrom, guess_log)
+                print('\t'.join([chrom, sample, true_cenhaps, guessed_cenhaps]))
