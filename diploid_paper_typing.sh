@@ -43,6 +43,3 @@ vg haplotypes -k $SAMPLE_TMP/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
 ./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" --ploidy 2 --fall-threshold 2000 \
         --dist-matrix "$DISTS" ${GUESS_LOG}.real.log &>> ${GUESS_LOG}.real.log
 cat ${GUESS_LOG}.real.log
-
-# No need to save these
-rm $SAMPLE_TMP/${PREFIX}.diploid.real.fastq.gz
