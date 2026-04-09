@@ -34,14 +34,13 @@ General inputs, processed before specific haplotypes:
 - Pair dists (<--dist-dir>/<chrom>_r2_QC_v2_centrolign_pairwise_distance.csv).
     Expects columns for hap1, hap2, and then float distance (0-1).
     Does not expect a header line, or even symmetric lines.
-- Banned haplotypes (--banned-haplotypes).
-    Haplotypes which shouldn't be used by cenhap typing.
 
 Sample-specific inputs:
 - Haplotype sampling logs (<--log-dir>/<chrom>.<path>.guess.real.log).
     Expects a line output by `./guess_n_and_cenhap.py`.
-    "Best guess: use <n> haplotypes & sample cenhap = <cenhap>".
-    Also uses lines like "Selected haplotype <name> with score <score>"
+        Best guess: use <n> haplotypes & sample cenhap = <cenhap>.
+    Also uses lines like 
+        Selected haplotype <name> with score <score>
     to get the haplotypes sampled in order.
 - Alignment stats (<--aln-dir>/<chrom>.<path>.stats.log).
     A stats file with lines
@@ -89,8 +88,6 @@ def parse_args() -> argparse.Namespace:
                         help='Directory with haplotype sampling logs')
     parser.add_argument('-a', '--aln-dir', required=True,
                         help='Directory with read alignment stat files')
-    parser.add_argument('-b', '--banned-haplotypes', required=True,
-                        help='Haplotypes the typing algorithm may not use')
     return parser.parse_args()
 
 def read_chrom_cenhap_table(cenhap_file: str) -> Dict[str, str]:
@@ -145,43 +142,25 @@ def read_distances(distances_file: str) -> Dict[str, Dict[str, float]]:
             dist_matrix[hap2][hap1] = dist
     return dist_matrix
 
-def read_banned_haplotypes(banned_file: str) -> Dict[str, Set[str]]:
-    """Read a list of haplotypes to not use.
-    
-    A two-column file of banned haps, with format
-        chrom  hap1,hap2,...,hapN
-    
-    Read into a dict {chrom : {hap1, hap2, ..., hapN}}
-    """
-
-    banned_haps = dict()
-    with open(banned_file) as file:
-        for line in file:
-            parts = line.strip().split()
-            banned_haps[parts[0]] = set(parts[1].split(','))
-    return banned_haps
-
-def get_guesses(cenhap_tables: Dict[str, Dict[str, str]], chrom: str,
-                banned_haplo: Dict[str, Set[str]],
-                log_file: str) -> Tuple[List[str], List[str], int, str]:
+def get_guesses(log_file: str) -> Tuple[List[str], List[str], int, str]:
     """Look up the sampled haplotypes & tries to type the cenhap.
     
     Pulls specific sampled haplotypes via
         Selected haplotype <name> with score <score>
+    And then n & cenhap via
+        Best guess: use <n> haplotypes & sample cenhap = <cenhap>.
 
     Returns
     - A list of the haplotypes selected, in order
     - A list of their scores, in order
     - How many haplotypes from that were subsampled for the graph
     - What cenhap this haplotype was guessed as
-    - The haplotype used to make that guess
     """
 
     sampled_haps = []
     scores = []
     n_haps = None
     guess_cenhap = None
-    hap_used_for_guess = None
     with open(log_file) as file:
         for line in file:
             parts = line.strip().split()
@@ -189,19 +168,11 @@ def get_guesses(cenhap_tables: Dict[str, Dict[str, str]], chrom: str,
                 hap_name = parts[2]
                 sampled_haps.append(hap_name)
                 scores.append(parts[5])
-
-                if guess_cenhap is None:
-                    # Skip this one if it's banned
-                    if hap_name in banned_haplo[chrom]:
-                        continue
-                    # Otherwise, look it up
-                    if hap_name in cenhap_tables[chrom]:
-                        guess_cenhap = cenhap_tables[chrom][hap_name]
-                        hap_used_for_guess = hap_name
             elif line.startswith('Best guess'):
                 n_haps = int(parts[3])
+                guess_cenhap = parts[9]
             
-    return sampled_haps, scores, n_haps, guess_cenhap, hap_used_for_guess
+    return sampled_haps, scores, n_haps, guess_cenhap
 
 def get_aln_stats(log_file: str) -> Dict[str, List[float]]:
     """Read alignment statistics from stats log file.
@@ -250,12 +221,11 @@ def get_depth_stats(log_file: str) -> List[str]:
 
 def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                distance_matrices: Dict[str, Dict[str, Dict[str, float]]],
-               banned_haplo: Dict[str, Set[str]],
                log_dir: str, aln_dir: str) -> None:
     """Write the output TSV (see file docstring)."""
     # Write header
     column_titles = ['Chromosome', 'Haplotype name',
-                     'Truth cenhap', 'Guessed cenhap', 'Haplotype used to type',
+                     'Truth cenhap', 'Guessed cenhap',
                      'Sampled haplotype names', 'Sampled haplotype scores',
                      'Sampled haplotype depths',
                      'Minimum graph distance', 'Minimum sampled distance']
@@ -265,7 +235,7 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                           f'{aln_group} runtime', f'{aln_group} memory']
     print('\t'.join(column_titles))
 
-    for chrom in cenhap_tables.keys():
+    for chrom in ['chr4']:
         correct = 0
         total = 0
         for hap_name, truth_cenhap in cenhap_tables[chrom].items():
@@ -280,10 +250,9 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                 continue
 
             # Add guesses from logfile
-            sampled_haps, scores, n_haps, guess_cenhap, hap_used_for_guess = \
-                get_guesses(cenhap_tables, chrom, banned_haplo, guess_file)
-            items_to_write += [guess_cenhap, hap_used_for_guess,
-                               ','.join(sampled_haps), ','.join(scores)]
+            sampled_haps, scores, n_haps, guess_cenhap = get_guesses(guess_file)
+            items_to_write += [guess_cenhap, ','.join(sampled_haps),
+                               ','.join(scores)]
             
             depths = get_depth_stats(stats_file)
             items_to_write.append(','.join(depths))
@@ -320,7 +289,5 @@ if __name__ == '__main__':
     for chrom in cenhap_tables.keys():
         dist_matrices[chrom] = read_distances(
             os.path.join(args.dist_dir, f'{chrom}_{DIST_SUFFIX}'))
-    banned_haplo = read_banned_haplotypes(args.banned_haplotypes)
     # Write by-sample data
-    write_data(cenhap_tables, dist_matrices, banned_haplo,
-               args.log_dir, args.aln_dir)
+    write_data(cenhap_tables, dist_matrices, args.log_dir, args.aln_dir)
