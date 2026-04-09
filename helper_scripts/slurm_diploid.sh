@@ -18,7 +18,7 @@
 #SBATCH --ntasks=20
 #
 # Standard output and error log
-#SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
+#SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
 #SBATCH --time=5:00
