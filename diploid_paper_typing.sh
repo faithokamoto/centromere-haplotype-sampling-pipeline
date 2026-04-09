@@ -29,7 +29,7 @@ GUESS_LOG=$PROJ_DIR/graph/diploid/${PREFIX}.guess
 # ---- run typing ----
 
 # Combine haplotype-specific reads
-cat $READS_DIR/${PREFIX}.1.real.fastq $READS_DIR/${PREFIX}.2.real.fastq \
+zcat $READS_DIR/${PREFIX}.1.real.fastq.gz $READS_DIR/${PREFIX}.2.real.fastq.gz \
     > $READS_DIR/${PREFIX}.diploid.real.fastq
 
 kmc -k29 -m128 -okff -t16 -hp $READS_DIR/${PREFIX}.diploid.real.fastq \
