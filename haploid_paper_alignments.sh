@@ -52,6 +52,9 @@ GUESS_LOG=$GRAPH_DIR/${PREFIX}.guess
 
 ABSENT_SCORE=0.05
 
+# get rid of old graphs / alignments
+rm $SAMPLED_GRAPH.* $GUESS_LOG.* $ALN_DIR/${PREFIX}.*
+
 # ---- basic alignments (real reads) ----
 
 # align to own haplotype
