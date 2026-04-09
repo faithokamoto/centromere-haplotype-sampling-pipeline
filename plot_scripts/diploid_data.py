@@ -25,7 +25,7 @@ Sample-specific inputs:
 
 import argparse # Command-line argument parsing
 import os # Filesystem interactions
-from typing import Dict, Set # Type hinting
+from typing import Dict # Type hinting
 
 # Parts of file names (see file docstring)
 CENHAP_SUFFIX = 'cenhap_predictions.tsv'
