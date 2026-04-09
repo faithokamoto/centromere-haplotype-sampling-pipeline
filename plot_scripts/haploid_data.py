@@ -235,7 +235,7 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                           f'{aln_group} runtime', f'{aln_group} memory']
     print('\t'.join(column_titles))
 
-    for chrom in ['chr4']:
+    for chrom in cenhap_tables.keys():
         correct = 0
         total = 0
         for hap_name, truth_cenhap in cenhap_tables[chrom].items():
