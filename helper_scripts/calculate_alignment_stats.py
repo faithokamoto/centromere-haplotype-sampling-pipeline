@@ -248,36 +248,6 @@ def print_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
     print(f'{no_dir_prefix}: identity {identity} / correctness {correctness} /'
           f' runtime {runtime} / memory {memory}')
 
-def print_private_depth(all_nodes: Dict[str, Set[int]], sampling_log: str,
-                        aln_tsv_file: str) -> List[float]:
-    """Print average coverage for each haplotype's private nodes."""
-
-    sampled_haps = get_guesses(sampling_log)
-    # Precompute private nodes for each hap
-    hap_private = {}
-    for hap in sampled_haps:
-        hap_private[hap] = find_private_nodes(all_nodes, hap, set(sampled_haps))
-    coverage = {hap : 0 for hap in hap_private.keys()}
-
-    with open(aln_tsv_file) as file:
-        file.readline()  # Skip header
-        for line in file:
-            parts = line.strip().split('\t')
-            if len(parts) < 3:
-                # Unaligned reads have no node list; skip
-                continue
-            for node in parts[2].split(',')[:-1]:  # Ignore trailing comma
-                node_id = int(node.rstrip('+-'))
-
-                for hap, priv_nodes in hap_private.items():
-                    if node_id in priv_nodes:
-                        coverage[hap] += 1
-
-    for hap in sampled_haps:
-        priv_nodes = hap_private[hap]
-        avg = coverage[hap] / len(priv_nodes) if priv_nodes else 0.0
-        print(f'{hap} has average depth {avg}')
-
 if __name__ == '__main__':
     args = parse_args()
     # Needed across alignment files
@@ -300,7 +270,3 @@ if __name__ == '__main__':
                 aln_prefix = os.path.join(args.aln_dir,
                         f'{args.chrom}.{args.hap_name}.{ref}.{realness}.{tool}')
                 print_aln_stats(truth_nodes, priv_nodes, aln_prefix, req_priv)
-    
-    real_sampled_tsv = os.path.join(args.aln_dir,
-                       f'{args.chrom}.{args.hap_name}.sampled.real.giraffe.tsv')
-    print_private_depth(all_nodes, args.sampling_log, real_sampled_tsv)
