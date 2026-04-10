@@ -54,11 +54,16 @@ ALIGNERS = ['minimap2', 'giraffe']
 def parse_args() -> argparse.Namespace:
     """Handle command-line argument parsing."""
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--chrom', help='Chromosome (in filenames)')
-    parser.add_argument('-g', '--gfa', help='GFA file with path nodes')
-    parser.add_argument('-n', '--hap-name', help='Haplotype reads are from')
-    parser.add_argument('-r', '--reads-dir', help='Directory with truth TSVs')
-    parser.add_argument('-a', '--aln-dir', help='Directory with aligments')
+    parser.add_argument('-c', '--chrom', required=True,
+                        help='Chromosome (in filenames)')
+    parser.add_argument('-g', '--gfa', required=True,
+                        help='GFA file with path nodes')
+    parser.add_argument('-n', '--hap-name', required=True,
+                        help='Haplotype reads are from')
+    parser.add_argument('-r', '--reads-dir', required=True,
+                        help='Directory with truth TSVs')
+    parser.add_argument('-a', '--aln-dir', required=True,
+                        help='Directory with aligments')
     return parser.parse_args()
 
 def parse_node_list(node_str: str) -> Set[int]:

@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Get diploid typing data.')
     parser.add_argument('-c', '--cenhap-dir', required=True,
                         help='Directory with TSVs of truth cenhap assignments')
-    parser.add_argument('-l', '--log-dir',
+    parser.add_argument('-l', '--log-dir', required=True,
                         help='Directory with haplotype sampling logs')
     return parser.parse_args()
 

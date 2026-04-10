@@ -23,8 +23,10 @@ def parse_args() -> argparse.Namespace:
         description='Filter and shift coordinates in a headerless SAM file.'
     )
     parser.add_argument('sam', help='Headerless SAM file')
-    parser.add_argument('-s', '--start', type=int, help='Start coordinate')
-    parser.add_argument('-e', '--end', type=int, help='End coordinate')
+    parser.add_argument('-s', '--start', type=int, required=True,
+                        help='Start coordinate')
+    parser.add_argument('-e', '--end', type=int, required=True,
+                        help='End coordinate')
     return parser.parse_args()
 
 def cigar_ref_length(cigar: str) -> int:
