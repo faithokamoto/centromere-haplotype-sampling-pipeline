@@ -11,7 +11,6 @@ For each haplotype run, collect
 - Neighbor haplotype used to make said guess
 - Names of sampled haps (comma-separated)
 - Scores of sampled haps (comma-separated)
-- Depths on sampled haps (comma-separated)
 - Distance to closest hap in graph
 - Distance to closest sampled hap (within the ones we chose to align to)
 - Stats (identity, correctness, runtime, memory usage) for each alignment run:
@@ -45,8 +44,6 @@ Sample-specific inputs:
 - Alignment stats (<--aln-dir>/<chrom>.<path>.stats.log).
     A stats file with lines
         [prefix]: identity [0-1] / correctness [%] / runtime [sec] / memory [GB]
-    and
-        [haplotype] has average depth [coverage]
 """
 
 import argparse # Command line argument parsing
@@ -204,24 +201,6 @@ def get_aln_stats(log_file: str) -> Dict[str, List[float]]:
 
     return aln_stats
 
-def get_depth_stats(log_file: str) -> List[str]:
-    """Read depth statistics from stats log file.
-    
-    Uses lines like
-        [haplotype] has average depth [coverage]
-    """
-
-    depths = []
-    with open(log_file) as file:
-        for line in file:
-            if not 'depth' in line:
-                # Not depth stats
-                continue
-            parts = line.strip().split()
-            depths.append(parts[4])
-
-    return depths
-
 def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                distance_matrices: Dict[str, Dict[str, Dict[str, float]]],
                log_dir: str, aln_dir: str) -> None:
@@ -230,7 +209,6 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
     column_titles = ['Chromosome', 'Haplotype name',
                      'Truth cenhap', 'Guessed cenhap',
                      'Sampled haplotype names', 'Sampled haplotype scores',
-                     'Sampled haplotype depths',
                      'Minimum graph distance', 'Minimum sampled distance']
     for (ref, realness, tool) in ALN_COMBOS:
         aln_group = f'{ref} {tool} {realness}'
@@ -246,8 +224,6 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
             
             guess_file = os.path.join(
                 log_dir, f'{chrom}.{hap_name}.{GUESS_SUFFIX}')
-            stats_file = os.path.join(
-                aln_dir, f'{chrom}.{hap_name}.{STATS_SUFFIX}')
             if not os.path.exists(guess_file):
                 # This haplotype didn't go through the pipeline; skip
                 continue
@@ -256,9 +232,6 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
             sampled_haps, scores, n_haps, guess_cenhap = get_guesses(guess_file)
             items_to_write += [guess_cenhap, ','.join(sampled_haps),
                                ','.join(scores)]
-            
-            depths = get_depth_stats(stats_file)
-            items_to_write.append(','.join(depths))
 
             # Look up distances
             dist_row = distance_matrices[chrom][hap_name]
@@ -270,7 +243,8 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                                dist_row[closest_sampled_hap]]
 
             # Dump in alignment stats as well
-            aln_stats = get_aln_stats(stats_file)
+            aln_stats = get_aln_stats(os.path.join(
+                aln_dir, f'{chrom}.{hap_name}.{STATS_SUFFIX}'))
             if len(ALN_COMBOS) != len(aln_stats):
                 continue
             for (ref, realness, tool) in ALN_COMBOS:
