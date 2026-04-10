@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""Make Panel A of --absent-score supplementary figure.
+
+Looks up all the top-haplotype depth statistics in a directory,
+then uses those to make a grouped histogram calling out how
+HG00738.1 is problematic in chr4.
+
+./param_tests/depth_hist.py \
+    -l /private/groups/patenlab/fokamoto/centrolign/graph/default \
+    -o plot_outputs/depth_hist.png -n HG00738.1
+"""
 
 import argparse # Command-line argument parsing
 import os # Filesystem interactions
