@@ -59,8 +59,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('-n', '--hap-name', help='Haplotype reads are from')
     parser.add_argument('-r', '--reads-dir', help='Directory with truth TSVs')
     parser.add_argument('-a', '--aln-dir', help='Directory with aligments')
-    parser.add_argument('-l', '--sampling-log', 
-                        help='Real read haplotype sampling logfile')
     return parser.parse_args()
 
 def parse_node_list(node_str: str) -> Set[int]:
