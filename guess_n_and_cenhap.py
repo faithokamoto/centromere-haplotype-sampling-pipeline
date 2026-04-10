@@ -22,12 +22,12 @@ def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Guess n to sample & cenhap")
     parser.add_argument("--fall-threshold", '-f', type=int, default=500,
-                        required=True, help="Limit for drop from top score")
+                        help="Limit for drop from top score")
     parser.add_argument("--cenhap-table", type=str, required=True,
                         help="Cenhap assignments")
     parser.add_argument("--dist-matrix", type=str, required=True,
                         help="Distance matrix")
-    parser.add_argument("--ploidy", type=int, default=1, required=True,
+    parser.add_argument("--ploidy", type=int, default=1,
                         help="Sample ploidy (1 or 2)")
     parser.add_argument("logfile", type=str, help="Logfile to read from")
     return parser.parse_args()
