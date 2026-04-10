@@ -8,7 +8,6 @@ For each haplotype run, collect
 - Haplotype name
 - Truth cenhap
 - Guessed cenhap
-- Neighbor haplotype used to make said guess
 - Names of sampled haps (comma-separated)
 - Scores of sampled haps (comma-separated)
 - Distance to closest hap in graph
