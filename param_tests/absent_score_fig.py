@@ -28,7 +28,7 @@ From within /private/home/fokamoto/centromere-haplotype-sampling-pipeline
     -c /private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/chr4/chr4.cenhap_predictions.tsv \
     -d /private/groups/patenlab/fokamoto/centrolign/graph/default \
     -k /private/groups/cgl/jlsiren/centrolign/chr4.txt \
-    -s log/typing_tests -n HG00738.1 -o plot_outputs/absent_score.<png/svg/pdf>
+    -s log/typing_tests -n HG00738.1 -o plot_outputs/absent_score
 """
 
 # ==== file setup ====
@@ -79,8 +79,8 @@ def parse_args() -> argparse.Namespace:
                         help='Directory with depth stat log files')
     parser.add_argument('-n', '--haplotype-name', required=True,
                         help='Haplotype to call out')
-    parser.add_argument('-o', '--output-file', required=True,
-                        help='Graph file to write to')
+    parser.add_argument('-o', '--output-prefix', required=True,
+                        help='Prefix for svg/png outputs')
     return parser.parse_args()
 
 # === data collection functions ====
@@ -285,7 +285,7 @@ def plot_kmer_panel(panel: plt.Axes, kmer_counts: List[int],
     """
     panel.plot(range(5, len(kmer_counts) + 5), kmer_counts, color=OTHER_COLOR,
                marker='.', linestyle='None')
-    panel.plot(5, kmer_counts[0], color=SPECIAL_COLOR, marker='o')
+    panel.plot(5, kmer_counts[0], color=SPECIAL_COLOR, marker='.')
     panel.text(10, kmer_counts[0] / 2, hap_name)
     panel.set_xticks([])
     panel.set_yticks([1000, 2000, 3000], labels=['1k', '2k', '3k'])
@@ -335,4 +335,5 @@ if __name__ == '__main__':
     panel_letter(panelB, 'b')
     panel_letter(panelC, 'c')
 
-    fig.savefig(args.output_file)
+    fig.savefig(f'{args.output_prefix}.png')
+    fig.savefig(f'{args.output_prefix}.svg')
