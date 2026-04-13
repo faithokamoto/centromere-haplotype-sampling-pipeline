@@ -105,14 +105,14 @@ def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
     """Reads all cenhap tables in a directory.
     
     Finds all files matching
-        <--cenhap-dir>/<chrom>/<chrom>.cenhap_predictions.tsv
+        <--cenhap-dir>/<chrom>.cenhap_predictions.tsv
     and reads them into a {chrom : table} dictionary
     """
     cenhap_tables = dict()
     for item in os.listdir(cenhap_dir):
         if 'chr' in item:
             cenhap_tables[item] = read_chrom_cenhap_table(
-                os.path.join(cenhap_dir, item, f'{item}.{CENHAP_SUFFIX}'))
+                os.path.join(cenhap_dir, f'{item}.{CENHAP_SUFFIX}'))
     return cenhap_tables
 
 def read_distances(distances_file: str) -> Dict[str, Dict[str, float]]:
