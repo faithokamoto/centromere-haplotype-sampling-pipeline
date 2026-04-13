@@ -52,7 +52,7 @@ GUESS_LOG=$GRAPH_DIR/${PREFIX}.guess
 ABSENT_SCORE=0.05
 
 # get rid of old graphs / alignments
-rm $SAMPLED_GRAPH.* $GUESS_LOG.* $ALN_DIR/${PREFIX}.*
+rm -f ${SAMPLED_GRAPH}.* ${GUESS_LOG}.* $ALN_DIR/${PREFIX}.*
 
 # ---- basic alignments (real reads) ----
 
@@ -150,11 +150,11 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.sim --no-guessing \
 
 # ---- get stats! ----
 
-./helper_scripts/calculate_alignment_stats.py -c "$CHROM" -n "$HAP_NAME" -l ${GUESS_LOG}.real.log \
+./helper_scripts/calculate_alignment_stats.py -c "$CHROM" -n "$HAP_NAME" \
     -g ${BIG_GRAPH}.gbz.gfa -r $PROJ_DIR/to_align -a "$ALN_DIR" > $ALN_DIR/${PREFIX}.stats.log
 
 cat $ALN_DIR/${PREFIX}.stats.log
 
 # Clean up behind for space reasons
-rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam
+rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam $ALN_DIR/${PREFIX}.*.gam $ALN_DIR/${PREFIX}.*.tsv
 rm -rf "$KMER_DIR"
