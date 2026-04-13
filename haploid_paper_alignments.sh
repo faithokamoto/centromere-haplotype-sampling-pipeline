@@ -9,6 +9,7 @@ set -e
 
 echo "Top of haploid_paper_alignments.sh with ${1} ${2} input"
 
+git rev-parse HEAD
 vg version
 
 HAP_NAME=$1
