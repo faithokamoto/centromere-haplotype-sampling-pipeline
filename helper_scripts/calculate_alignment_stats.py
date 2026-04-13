@@ -72,14 +72,14 @@ def parse_node_list(node_str: str) -> Set[int]:
             in node_str.strip().split(',') if node}
 
 def parse_walk(walk: str) -> Set[int]:
-    """Parse a W-line walk string like >12<34>56 into node IDs"""
+    """Parse a W-line walk string like >12<34>56 into node IDs."""
     nodes = set()
     for match in re.finditer(r'[><](\d+)', walk):
         nodes.add(int(match.group(1)))
     return nodes
 
 def read_nodes(gfa_file: str) -> Dict[str, Set[int]]:
-    """Read nodes for each haplotype from W lines in a GFA"""
+    """Read nodes for each haplotype from W lines in a GFA."""
     hap_nodes = {}
 
     with open(gfa_file) as f:

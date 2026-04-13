@@ -20,16 +20,16 @@ class SampledHaplotype:
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description="Guess n to sample & cenhap")
-    parser.add_argument("--fall-threshold", '-f', type=int, default=500,
-                        help="Limit for drop from top score")
-    parser.add_argument("--cenhap-table", type=str, required=True,
-                        help="Cenhap assignments")
-    parser.add_argument("--dist-matrix", type=str, required=True,
-                        help="Distance matrix")
-    parser.add_argument("--ploidy", type=int, default=1,
-                        help="Sample ploidy (1 or 2)")
-    parser.add_argument("logfile", type=str, help="Logfile to read from")
+    parser = argparse.ArgumentParser(description='Guess n to sample & cenhap')
+    parser.add_argument('--fall-threshold', '-f', type=int, default=500,
+                        help='Limit for drop from top score')
+    parser.add_argument('--cenhap-table', type=str, required=True,
+                        help='Cenhap assignments')
+    parser.add_argument('--dist-matrix', type=str, required=True,
+                        help='Distance matrix')
+    parser.add_argument('--ploidy', type=int, default=1,
+                        help='Sample ploidy (1 or 2)')
+    parser.add_argument('logfile', type=str, help='Logfile to read from')
     return parser.parse_args()
 
 def parse_scores(logfile: str) -> List[SampledHaplotype]:
@@ -92,18 +92,18 @@ def print_dist_info(dist_matrix: Dict[str, Dict[str, float]],
     Also reports the top N closest haps, for N = |sampled|.
     """
 
-    print("Sampled haplotypes:")
+    print('Sampled haplotypes:')
 
     for other_hap in sampled:
         other_name = other_hap.name
-        print(f"{other_name} is dist {dist_matrix[path_name][other_name]}")
+        print(f'{other_name} is dist {dist_matrix[path_name][other_name]}')
 
-    print("Top haplotypes:")
+    print('Nearest haplotypes:')
     
     top_dist = sorted(dist_matrix[path_name], key=dist_matrix[path_name].get)
     for i in range(len(sampled)):
         top_name = top_dist[i]
-        print(f"{top_name} is dist {dist_matrix[path_name][top_name]}")
+        print(f'{top_name} is dist {dist_matrix[path_name][top_name]}')
 
 def guess_optimal_n(sampled: List[SampledHaplotype], threshold: int) -> int:
     """Guess the optimal number of haplotypes to sample.
@@ -156,7 +156,7 @@ def guess_cenhap(sampled: List[SampledHaplotype], cenhap_table: Dict[str, str],
             cenhap2 = cenhaps_sampled.pop()
             return f'{cenhap1} / {cenhap2}'
     
-if __name__ == "__main__":
+if __name__ == '__main__':
     args = parse_args()
 
     if args.ploidy != 1 and args.ploidy != 2:
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     scores = parse_scores(args.logfile)
     matrix = read_dist_matrix(args.dist_matrix)
     if args.ploidy == 1:
-        hap_name_parts = args.logfile.split("/")[-1].split(".")
+        hap_name_parts = args.logfile.split('/')[-1].split('.')
         hap_name = f'{hap_name_parts[1]}.{hap_name_parts[2]}'
         print_dist_info(matrix, scores, hap_name)
     optimal_n = guess_optimal_n(scores, args.fall_threshold)
@@ -173,4 +173,4 @@ if __name__ == "__main__":
     cenhap_table = read_cenhap_table(args.cenhap_table)
     cenhap = guess_cenhap(scores, cenhap_table, optimal_n, args.ploidy)
     
-    print(f"Best guess: use {optimal_n} haplotypes & sample cenhap = {cenhap}")
+    print(f'Best guess: use {optimal_n} haplotypes & sample cenhap = {cenhap}')

@@ -27,16 +27,16 @@ Graph = Tuple[Nodes, List[Edge], Paths]
 # Magic numbers
 DUMMY_START_ID = 1
 DUMMY_END_ID = 2
-HEADER_LINE = "H\tVN:Z:1.0"
+HEADER_LINE = 'H\tVN:Z:1.0'
 
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Add dummy start and end nodes to a GFA")
-    parser.add_argument("-o", "--output", type=str, required=True,
-                        help="Output GFA file with dummy nodes added")
-    parser.add_argument("gfas", type=str,  nargs="+",
-                         help="GFA files with haplotype paths")
+        description='Add dummy start and end nodes to a GFA')
+    parser.add_argument('-o', '--output', type=str, required=True,
+                        help='Output GFA file with dummy nodes added')
+    parser.add_argument('gfas', type=str,  nargs='+',
+                         help='GFA files with haplotype paths')
     return parser.parse_args()
 
 def read_gfa(gfa_file: str) -> Graph:
@@ -53,7 +53,7 @@ def read_gfa(gfa_file: str) -> Graph:
         The graph as (nodes, edges, paths).
     """
 
-    print("Reading GFA file:", gfa_file)
+    print('Reading GFA file:', gfa_file)
     nodes = dict()
     edges = []
     paths = dict()
@@ -84,7 +84,7 @@ def read_gfa(gfa_file: str) -> Graph:
                                     '+' if node.endswith('+') else '-')
                                    for node in parts[2].split(',')]
             else:
-                raise ValueError(f"Unrecognized GFA line: {line.strip()}")
+                raise ValueError(f'Unrecognized GFA line: {line.strip()}')
     return nodes, edges, paths
 
 def merge_gfas(gfa_files: List[str]) -> Graph:
@@ -189,9 +189,9 @@ def convert_to_pan_sn(path_name: str) -> str:
     """
 
     if '.' not in path_name:
-        raise ValueError(f"Path name {path_name} does not contain a '.'")
+        raise ValueError(f'Path name {path_name} does not contain a "."')
     sample_name, haplo_num = path_name.rsplit('.', 1)
-    pan_sn_name = f"{sample_name}#{haplo_num}#{path_name}"
+    pan_sn_name = f'{sample_name}#{haplo_num}#{path_name}'
     return pan_sn_name
 
 def write_gfa(graph: Graph, output_file: str):
@@ -207,23 +207,24 @@ def write_gfa(graph: Graph, output_file: str):
 
     nodes, edges, paths = graph
     with open(output_file, 'w') as f:
-        f.write(f"{HEADER_LINE}\n")
+        f.write(f'{HEADER_LINE}\n')
         for node_id, seq in sorted(nodes.items()):
-            f.write(f"S\t{node_id}\t{seq}\n")
+            f.write(f'S\t{node_id}\t{seq}\n')
         for edge in edges:
             from_node, from_orient, to_node, to_orient, overlap = edge
-            f.write(f"L\t{from_node}\t{from_orient}\t{to_node}\t{to_orient}\t{overlap}\n")
+            f.write(f'L\t{from_node}\t{from_orient}'
+                    f'\t{to_node}\t{to_orient}\t{overlap}\n')
         for path_name, node_list in paths.items():
-            path_str = ','.join(f"{node_id}{orientation}" 
+            path_str = ','.join(f'{node_id}{orientation}' 
                                 for node_id, orientation in node_list)
             pan_sn_name = convert_to_pan_sn(path_name)
-            f.write(f"P\t{pan_sn_name}\t{path_str}\t*\n")
+            f.write(f'P\t{pan_sn_name}\t{path_str}\t*\n')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     args = parse_args()
-    print("Merging GFA files...")
+    print('Merging GFA files...')
     merged_graph = merge_gfas(args.gfas)
-    print("Adding dummy nodes...")
+    print('Adding dummy nodes...')
     final_graph = add_dummy_nodes(merged_graph)
-    print(f"Writing output to {args.output}...")
+    print(f'Writing output to {args.output}...')
     write_gfa(final_graph, args.output)
