@@ -13,7 +13,6 @@ Lines assumed to be sorted from small to large, as follows:
 """
 
 import argparse # Command-line argument parsing
-import os # Filesystem interactions
 
 import matplotlib.pyplot as plt # Basic plotting
 
