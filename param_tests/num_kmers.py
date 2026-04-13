@@ -14,7 +14,6 @@ Lines assumed to be sorted from small to large, as follows:
 
 import argparse # Command-line argument parsing
 import os # Filesystem interactions
-from typing import Tuple # Type hinting
 
 import matplotlib.pyplot as plt # Basic plotting
 
