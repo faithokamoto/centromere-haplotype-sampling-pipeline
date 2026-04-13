@@ -94,7 +94,7 @@ rm -f ${SAMPLED_GRAPH}.* ${GUESS_LOG}.* $ALN_DIR/${PREFIX}.*
 ./helper_scripts/align_reads_giraffe.sh ${NEIGHBOR_GRAPH}.gbz \
     ${READS}.sim.fastq.gz ${NEIGHBOR_ALN}.sim.giraffe
 
-# ---- align to to haplotype-sampled graphs (real) ----
+# ---- align to to haplotype-sampled graphs ----
 
 echo "Haplotype sampling on real reads"
 
@@ -120,33 +120,8 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.real.gbz 2> /dev/null
 
 ./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz ${READS}.real.fastq.gz ${SAMPLED_ALN}.real.giraffe
-
-# ---- align to to haplotype-sampled graphs (sim) ----
-
-echo "Haplotype sampling on sim reads"
-
-kmc -k29 -m128 -okff -t16 -hp ${READS}.sim.fastq.gz \
-    $KMER_DIR/${PREFIX}.sim "$KMER_DIR"
-
-# Sample 5 haps without alignment, so we can guess ideal # to sample
-vg haplotypes -k $KMER_DIR/${PREFIX}.sim.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes 5 --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score $ABSENT_SCORE \
-    -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.sim.log
-
-# Use logfile to guess
-./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" \
-        --dist-matrix "$DISTS" ${GUESS_LOG}.sim.log &>> ${GUESS_LOG}.sim.log
-cat ${GUESS_LOG}.sim.log
-
-n_to_sample=`fgrep Best ${GUESS_LOG}.sim.log | cut -d " " -f4`
-
-vg haplotypes -k $KMER_DIR/${PREFIX}.sim.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score $ABSENT_SCORE \
-    -g ${SAMPLED_GRAPH}.sim.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
-vg autoindex --prefix ${SAMPLED_GRAPH}.sim --no-guessing \
-    --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.sim.gbz 2> /dev/null
-
-./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.sim.gbz ${READS}.sim.fastq.gz ${SAMPLED_ALN}.sim.giraffe
+# Align sim reads to same graph
+./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz ${READS}.sim.fastq.gz ${SAMPLED_ALN}.sim.giraffe
 
 # ---- get stats! ----
 
