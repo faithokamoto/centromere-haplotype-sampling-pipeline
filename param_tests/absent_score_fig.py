@@ -25,7 +25,7 @@ and plot # of times HG00738.1 tricked the typer.
 From within /private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
 ./param_tests/absent_score_fig.py \
-    -c /private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/chr4/chr4.cenhap_predictions.tsv \
+    -c input_data/chr4.cenhap_predictions.tsv \
     -d /private/groups/patenlab/fokamoto/centrolign/graph/default \
     -k /private/groups/cgl/jlsiren/centrolign/chr4.txt \
     -s log/typing_tests -n HG00738.1 -o plot_outputs/absent_score

@@ -15,9 +15,8 @@ PREFIX=${CHROM}.${SAMPLE_ID}
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/$CHROM
-MIRA_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2
-DISTS=$MIRA_DIR/all_pairs/distance_matrices/${CHROM}_r2_QC_v2_centrolign_pairwise_distance.csv
-CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/${CHROM}/${CHROM}.cenhap_predictions.tsv
+DISTS=./input_data/${CHROM}_r2_QC_v2_centrolign_pairwise_distance.csv
+CENHAP_TABLE=./input_data/${CHROM}.cenhap_predictions.tsv
 
 READS_DIR=$PROJ_DIR/to_align
 SAMPLE_TMP=$TMPDIR/faith_$SAMPLE_ID

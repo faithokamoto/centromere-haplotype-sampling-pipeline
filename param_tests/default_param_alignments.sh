@@ -10,8 +10,8 @@ PREFIX=${CHROM}.${HAP_NAME}
 
 PROJ_DIR=/private/groups/patenlab/fokamoto/centrolign
 BIG_GRAPH=$PROJ_DIR/graph/unsampled/$CHROM
-DISTS=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/all_pairs/distance_matrices/${CHROM}_r2_QC_v2_centrolign_pairwise_distance.csv
-CENHAP_TABLE=/private/groups/migalab/juklucas/centrolign/cenhap_assignment/cenhap_inference_out/${CHROM}/${CHROM}.cenhap_predictions.tsv
+DISTS=./input_data/${CHROM}_r2_QC_v2_centrolign_pairwise_distance.csv
+CENHAP_TABLE=./input_data/${CHROM}.cenhap_predictions.tsv
 
 READS=$PROJ_DIR/to_align/$PREFIX
 KMER_DIR=$TMPDIR/faith_$PREFIX
