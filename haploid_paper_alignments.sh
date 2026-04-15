@@ -28,7 +28,7 @@ GRAPH_DIR=$PROJ_DIR/graph/haploid
 ALN_DIR=$PROJ_DIR/alignments/haploid
 
 KMER_DIR=$TMPDIR/faith_$PREFIX
-mkdir $KMER_DIR
+mkdir -p $KMER_DIR
 
 nearest_neighbor=`grep "$HAP_NAME" "$DISTS" | sed 's/,/\t/g' | sort -k3 -n | head -1 \
     | cut -f1-2 | tr "\t" "\n" | grep -v "$HAP_NAME"`
