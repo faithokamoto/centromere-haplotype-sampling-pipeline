@@ -21,6 +21,14 @@ General inputs, processed before specific haplotypes:
 Sample-specific inputs:
 - Haplotype sampling logs (<--log-dir>/<chrom>.<sample>.guess.real.log).
     Uses lines like "Selected haplotype <name> with score <score>"
+
+== How I ran this ==
+
+From within /private/home/fokamoto/centromere-haplotype-sampling-pipeline
+
+./data_scripts/diploid_data.py \
+    -c input_data \
+    -l /private/groups/patenlab/fokamoto/centrolign/graph/diploid > diploid_data.tsv
 """
 
 import argparse # Command-line argument parsing
@@ -49,13 +57,11 @@ def read_chrom_cenhap_table(cenhap_file: str) -> Dict[str, str]:
     {haplotype : cenhap} dictionary.
     """
     cenhap_table = dict()
-    # Collect all hap -> cenhap assignments
     with open(cenhap_file) as file:
         file.readline()  # Skip header
         for line in file:
             parts = line.strip().split('\t')
-            hap_name = parts[0]
-            cenhap_table[hap_name] = parts[1]
+            cenhap_table[parts[0]] = parts[1]
     return cenhap_table
 
 def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
@@ -67,9 +73,10 @@ def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
     """
     cenhap_tables = dict()
     for item in os.listdir(cenhap_dir):
-        if 'chr' in item:
-            cenhap_tables[item] = read_chrom_cenhap_table(
-                os.path.join(cenhap_dir, f'{item}.{CENHAP_SUFFIX}'))
+        if CENHAP_SUFFIX in item:
+            chrom = item.split('.')[0]
+            cenhap_tables[chrom] = read_chrom_cenhap_table(
+                os.path.join(cenhap_dir, item))
     return cenhap_tables
 
 def extract_guess(cenhap_tables: Dict[str, Dict[str, str]], chrom: str,
