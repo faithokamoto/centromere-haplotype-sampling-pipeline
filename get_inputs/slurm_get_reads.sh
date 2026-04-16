@@ -32,7 +32,7 @@ DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 source /private/home/${USER}/.bashrc
 source activate cenhap-sample
 
-READ_LOCS=/private/groups/patenlab/fokamoto/centrolign/to_align/aws_file_locations.csv
+READ_LOCS=$DIR/input_data/aws_file_locations.csv
 sample_id=`head -n "$SLURM_ARRAY_TASK_ID" "$READ_LOCS" | tail -n 1 | cut -f1 -d ","`
 echo "Running sample: $sample_id"
 
