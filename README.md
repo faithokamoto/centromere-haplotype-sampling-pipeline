@@ -28,10 +28,7 @@ graphs of centromeres. This pipeline combines these developments to align
 centromeric long reads to a pangenome reference graph.
 
 However, this graph is very complex. The chr12 reference has 373 haplotypes.
-Thus, aligning directly to the reference graph is impractical. Many possibly
-informative seeds are dropped due to the "high hit cap", i.e. appearing too many
-times in the read and reference. We can't shorten the reads without surrending
-the very longness that makes them valuable. However, we can simplify the graph.
+Aligning directly to the reference graph, or even indexing it, is impractical.
 
 Haplotype sampling entails selecting a personalized set of *n* haplotypes which
 best match the input read set's *k*-mers. The full reference graph is then
