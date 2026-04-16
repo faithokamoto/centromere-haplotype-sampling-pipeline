@@ -50,13 +50,13 @@ for hap_num in 1 2; do
         samtools view -H $SAMPLE_TMP/chrom.sam | sed "s/$old_path_name/$new_path_name/" > $SAMPLE_TMP/header.txt
         # Filter for reads which appear within the BED file's boundaries
         # while also editing the coordinates to be graph-friendly
-        ./helper_scripts/edit_sam.py --start "$start" --end "$end" \
+        ./get_inputs/edit_sam.py --start "$start" --end "$end" \
             $SAMPLE_TMP/no_header.sam > $SAMPLE_TMP/edited.sam
         cat $SAMPLE_TMP/header.txt $SAMPLE_TMP/edited.sam > $SAMPLE_TMP/combined.sam
         
         # Single-hap graph is convenient for injection & simulation
         single_hap_graph=$PROJ_DIR/graph/haploid/${chrom}.${hap_id}
-        ./helper_scripts/create_single_path_ref.sh $PROJ_DIR/graph/unsampled/${chrom}.pg \
+        ./get_inputs/create_single_path_ref.sh $PROJ_DIR/graph/unsampled/${chrom}.pg \
             "${new_path_name}#0" "$single_hap_graph"
         read_prefix=$PROJ_DIR/to_align/${chrom}.${hap_id}
         # Get truth positions

@@ -37,4 +37,4 @@ sample_id=`head -n "$SLURM_ARRAY_TASK_ID" "$READ_LOCS" | tail -n 1 | cut -f1 -d 
 echo "Running sample: $sample_id"
 
 log=$DIR/log/${sample_id}.get_reads.log
-$DIR/helper_scripts/get_reads.sh $sample_id &> $log
+$DIR/get_inputs/get_reads.sh $sample_id &> $log
