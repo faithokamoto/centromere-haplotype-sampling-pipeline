@@ -27,7 +27,7 @@ From within /private/home/fokamoto/centromere-haplotype-sampling-pipeline
 ./param_tests/absent_score_fig.py \
     -c input_data/chr4.cenhap_predictions.tsv \
     -d /private/groups/patenlab/fokamoto/centrolign/graph/default \
-    -k /private/groups/cgl/jlsiren/centrolign/chr4.txt \
+    -k input_data/chr4.txt \
     -s log/typing_tests -n HG00738.1 -o plot_outputs/absent_score
 """
 

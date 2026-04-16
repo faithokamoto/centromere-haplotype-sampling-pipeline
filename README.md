@@ -71,6 +71,8 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
   `input_dir/aws_file_locations.csv`
 - **BED array annotations for all haplotypes** (external, in Mira's dir)
   `/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/per_smp_asat_beds/`
+- **Graph-unique k-mer counts per chr4 haplotype** (for parameter search)  
+  `input_data/chr4.txt`
 
 ## Files
 
@@ -90,6 +92,13 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
     - `calculate_alignment_stats.py`: get stats for one haplo/chrom pair
     - `slurm_diploid.sh`: run `diploid_paper_typing.sh` on sample/chrom pairs
     - `slurm_haploid.sh`: run `haploid_paper_alignments.sh` on haplo/chrom pairs
+- **`--absent-score` parameter testing** (`param_tests`)
+    - `absent_score_fig.py`: create `--absent-score` supplementary figure
+    - `arial.ttf`: font to make the figure fit within *Nature* rules
+    - `calculate_private_depths.py`: get depth on private nodes of top haplotype
+    - `default_param_alignments.sh`: align to default-parameter sampled graph
+    - `slurm_alignments.sh`: run `default_param_alignments.sh` on chr4 haplos
+    - `testing_absent_score.sh`: run chr4 typing with varying `--absent-score`
 - **Main pipeline/methods**:
     - `diploid_paper_typing.sh`: run typing experiment for one sample/chrom pair
     - `guess_n_and_cenhap.py`: guess optimal *n* value and cenhap of input
