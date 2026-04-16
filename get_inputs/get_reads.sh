@@ -11,7 +11,7 @@ BED_DIR=/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/re
 SAMPLE_TMP=$TMPDIR/faith_$SAMPLE_ID
 mkdir -p $SAMPLE_TMP
 
-reads=`grep "^$SAMPLE_ID," "$PROJ_DIR/to_align/aws_file_locations.csv" | cut -f3 -d ","`
+reads=`grep "^$SAMPLE_ID," "./input_data/aws_file_locations.csv" | cut -f3 -d ","`
 echo "Downloading reads for $SAMPLE_ID from AWS"
 aws s3 --no-sign-request cp "$reads" $SAMPLE_TMP/full.bam &> /dev/null
 echo "Download complete"
