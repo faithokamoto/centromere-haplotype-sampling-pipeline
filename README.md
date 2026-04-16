@@ -11,7 +11,7 @@ information ([this print][ExtraPrint]) turned on
 Then do
 ```bash
 conda create -n cenhap-sample -c conda-forge -c bioconda \
-    kmc matplotlib minimap2 samtools seaborn
+    kmc matplotlib minimap2 samtools
 ```
 
 ## Background
@@ -41,29 +41,62 @@ hits and thus makes read alignment possible. Selection of *n* is non-trivial.
 ## Workflow
 
 What I did:
-1. Acquire a Centrolign GFA (or GFAs), e.g. 
+1. Acquire Centrolign GFAs, e.g. 
     `/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/MSA/chr4/chr4.centrolign.gfa`
 2. Connect dummy nodes to the source and sink of each haplotype path. This step
 is necessary because all haplotypes must participate in the same top-level chain
 for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
 3. Convert to a GBZ and index for haplotype sampling: `gfa_to_gbz_ref.sh`
 4. Extract CHM13 reference from the larger graph: `create_single_path_ref.sh`
-5. Acquire reads & linear references: `get_reads.sh` via `slurm_get_reads.sh`
-6. Perform alignment and typing experiments:
-    - `haploid_paper_alignments.sh` (called with `slurm_haploid.sh`)
-    - `diploid_paper_typing.sh` (called with `slurm_diploid.sh`)
+5. Acquire reads & linear references: `get_reads.sh` (via `slurm_get_reads.sh`)
+6. Refine parameters (`param_test`):
+    - `default_param_alignments.sh` (via `slurm_alignments.sh`)
+    - `testing_absent_score.sh`
+    - `absent_score_fig.py`
+7. Perform alignment and typing experiments:
+    - `haploid_paper_alignments.sh` (via `slurm_haploid.sh`)
+    - `diploid_paper_typing.sh` (via `slurm_diploid.sh`)
+8. Collect experiment data (`data_scripts`)
+    - `haploid_data.py`
+    - `diploid_data.py`
+
+## Inputs
+
+Note that I use "all chromosomes" here, but that just means the ones I used,
+which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
+
+- **Centrolign GFAs**
+- **Distance matrices** (headerless CSV hap1,hap2,dist)  
+  `input_dir/chr*_r2_QC_v2_centrolign_pairwise_distance.csv`
+- **Truth cenhap assignments** (header TSV haplotype & cenhap)  
+  `input_dir/chr*.cenhap_predictions.tsv`
+- **Table of HPRC BAM locations** (CSV, first col is sample name, third is BAM)  
+  `input_dir/aws_file_locations.csv`
+- **BED array annotations for all haplotypes** (external, in Mira's dir)
+  `/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/per_smp_asat_beds/`
 
 ## Files
 
-- **Workflow**
+- **Data collection scripts** (`data_scripts`)
+    - `haploid_data.py`: get haploid alignment & typing stats
+    - `diploid_data.py`: get diploid typing stats
+- **Preprocessing scripts** (`get_inputs`)
     - `add_dummy_caps.py`: modify Centrolign GFAs to input to haplotype sampling
     - `create_single_path_ref.sh`: extract & index a linear ref from graph
+    - `edit_sam.py`: update a SAM file from genome-wide to graph-space
+    - `get_reads.sh`: prepare reads & linear references for a haplotype
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
+    - `slurm_get_reads.sh`: run `get_reads.sh` on haplo/chrom pairs
+- **Main pipeline helpers** (`helper_scripts`)
+    - `align_reads_giraffe.sh`: align reads with Giraffe & get per-read stats
+    - `align_reads_minimap2.sh`: align reads with Minimap2 & get per-read stats
+    - `calculate_alignment_stats.py`: get stats for one haplo/chrom pair
+    - `slurm_diploid.sh`: run `diploid_paper_typing.sh` on sample/chrom pairs
+    - `slurm_haploid.sh`: run `haploid_paper_alignments.sh` on haplo/chrom pairs
+- **Main pipeline/methods**:
+    - `diploid_paper_typing.sh`: run typing experiment for one sample/chrom pair
     - `guess_n_and_cenhap.py`: guess optimal *n* value and cenhap of input
-    - `haploid_paper_alignments.sh`: run the alignments
-- **Plotting**
-    - `haploid_data.py`: calculate haploid alignment & typing stats
-    - `diploid_data.py`: calculate diploid typing stats
+    - `haploid_paper_alignments.sh`: run alignments for one haplo/chrom pair
 - **Metadata**
     - `.gitignore`: some files that I don't feel like putting on version control
     - `LICENSE`: the MIT license as it applies to this repository
