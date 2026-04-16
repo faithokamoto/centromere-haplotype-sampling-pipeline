@@ -32,12 +32,17 @@ From within /private/home/fokamoto/centromere-haplotype-sampling-pipeline
 """
 
 import argparse # Command-line argument parsing
+from collections import Counter # Easier counting of cenhap matches
 import os # Filesystem interactions
-from typing import Dict, List # Type hinting
+import sys # stderr
+from typing import Dict, Tuple # Type hinting
 
 # Parts of file names (see file docstring)
 CENHAP_SUFFIX = 'cenhap_predictions.tsv'
 GUESS_SUFFIX = 'guess.real.log'
+
+Diplotype = Tuple[str, str]
+"""A sorted pair of cenhaps assigned to a sample."""
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
@@ -63,7 +68,7 @@ def read_chrom_cenhap_table(cenhap_file: str) -> Dict[str, str]:
             cenhap_table[parts[0]] = parts[1]
     return cenhap_table
 
-def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
+def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Diplotype]:
     """Reads all cenhap tables in a directory.
     
     Finds all files matching
@@ -78,7 +83,7 @@ def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
                 os.path.join(cenhap_dir, item))
     return cenhap_tables
 
-def extract_guess(log_file: str) -> List[str]:
+def extract_guess(log_file: str) -> Tuple[str]:
     """Read haplotype pair from file."""
     with open(log_file) as file:
         for line in file:
@@ -86,9 +91,9 @@ def extract_guess(log_file: str) -> List[str]:
             if line.startswith('Best guess'):
                 guess_1 = parts[9]
                 guess_2 = parts[11]
-                return sorted([guess_1, guess_2])
+                return tuple(sorted([guess_1, guess_2]))
             
-def find_all_diplotypes(cur_table: Dict[str, str]) -> Dict[str, str]:
+def find_all_diplotypes(cur_table: Dict[str, str]) -> Dict[str, Diplotype]:
     """Convert a {haplotype : cenhap} table to a {sample : cenhaps} table."""
     all_samples = {hap.split('.')[0] for hap in cur_table.keys()}
     sample_to_true = dict()
@@ -96,8 +101,15 @@ def find_all_diplotypes(cur_table: Dict[str, str]) -> Dict[str, str]:
         if f'{sample}.1' in cur_table and f'{sample}.2' in cur_table:
             cenhap1 = cur_table[f'{sample}.1']
             cenhap2 = cur_table[f'{sample}.2']
-            sample_to_true[sample] = sorted([cenhap1, cenhap2])
+            sample_to_true[sample] = tuple(sorted([cenhap1, cenhap2]))
     return sample_to_true
+
+def count_matches(guess: Diplotype, truth: Diplotype) -> int:
+    """Count how many cenhaps match between two diplotypes."""
+    guess_counter = Counter(guess)
+    truth_counter = Counter(truth)
+    return sum(min(truth_counter[cenhap], count)
+               for cenhap, count in guess_counter.items())
 
 if __name__ == '__main__':
     args = parse_args()
@@ -107,6 +119,10 @@ if __name__ == '__main__':
                      'Truth cenhaps', 'Guessed cenhaps']))
     for chrom in cenhap_tables.keys():
         sample_to_true = find_all_diplotypes(cenhap_tables[chrom])
+        exact_matches = 0
+        near_matches = 0
+        total = 0
+
         for sample, true_cenhaps in sample_to_true.items():
             guess_log = os.path.join(args.log_dir, 
                                      f'{chrom}.{sample}.{GUESS_SUFFIX}')
@@ -115,3 +131,15 @@ if __name__ == '__main__':
                 print('\t'.join([chrom, sample, 
                                 ','.join(true_cenhaps),
                                 ','.join(guessed_cenhaps)]))
+                
+                match_count = count_matches(guessed_cenhaps, true_cenhaps)
+                if match_count == 2:
+                    exact_matches += 1
+                elif match_count == 1:
+                    near_matches += 1
+                total += 1
+        
+        exact_acc = 100 * exact_matches / total
+        near_acc = 100 * (exact_matches + near_matches) / total
+        print(f'{chrom} accuracy: {near_acc:.2f}% half, {exact_acc:.2f}% exact',
+              file=sys.stderr)
