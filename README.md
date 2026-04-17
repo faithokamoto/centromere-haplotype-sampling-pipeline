@@ -5,13 +5,24 @@ undergone [haplotype sampling][HaplotypeSampling].
 
 ## Dependencies
 
-[`vg`][vg] currently version `v1.73.0-33-gbf85ab04b` with an extra debugging
-information ([this print][ExtraPrint]) turned on
+- [`vg`][vg] currently version `v1.73.0-33-gbf85ab04b` with extra haplotype
+    sampling information ([this print][ExtraPrint]) turned on
+- [`ModDotPlot`][ModDotPlot] version `v0.9.9` installed from source and using
+    its default environemnt
 
-Then do
+Most commands are run within this Conda environment:
 ```bash
 conda create -n cenhap-sample -c conda-forge -c bioconda \
     kmc matplotlib minimap2 samtools
+```
+
+The ModDotPlot commands, at the end of `moddotplot/massage_inputs.sh`, are run
+within its default virtual environment, and NOT within the Conda environment.
+```bash
+git clone https://github.com/marbl/ModDotPlot.git
+cd ModDotPlot
+python -m venv venv
+source venv/bin/activate
 ```
 
 ## Background
@@ -73,6 +84,9 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
   `/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/per_smp_asat_beds/`
 - **Graph-unique k-mer counts per chr4 haplotype** (for parameter search)  
   `input_data/chr4.txt`
+- **CIGAR strings for some chr10 HG01106.1 assembly alignments**  
+    - `input_data/pairwise_cigar_CHM13.0_HG01106.1.txt`
+    - `input_data/pairwise_cigar_HG01106.1_HG01891.2.txt`
 
 ## Files
 
@@ -111,6 +125,7 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
 [Centrolign]: https://github.com/jeizenga/centrolign
 [ExtraPrint]: https://github.com/vgteam/vg/blob/bf85ab04b251e7a2bc308750d6c8c44afda213f5/src/recombinator.cpp#L12
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling
+[ModDotPlot]: https://github.com/marbl/ModDotPlot
 [LRgiraffe]: https://doi.org/10.1101/2025.09.29.678807
 [SelectionCode]: https://github.com/vgteam/vg/blob/2e664f07e49caca29a208b3b0f2f25c7100df5e9/src/recombinator.cpp#L2056-L2058
 [vg]: https://github.com/vgteam/vg
