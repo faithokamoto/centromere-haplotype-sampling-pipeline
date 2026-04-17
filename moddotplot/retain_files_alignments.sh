@@ -96,7 +96,5 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
 
 ./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz ${READS}.real.fastq.gz ${SAMPLED_ALN}.real.giraffe
 
-cat $ALN_DIR/${PREFIX}.stats.log
-
 # Clean up behind for space reasons
 rm -rf "$KMER_DIR"
