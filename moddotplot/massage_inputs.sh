@@ -28,9 +28,9 @@ SAMPLED_ALN=$ALN_DIR/${PREFIX}.sampled
 # ---- vg / samtools; use "cenhap-sample" Conda environment ----
 
 # BAMs have already had secondary/supplementary alignments filtered out
-samtools view ${OWN_HAP_ALN}.real.minimap2.bam > ${OWN_HAP_ALN}.clean.sam
-samtools view ${NEIGHBOR_ALN}.real.minimap2.bam > ${NEIGHBOR_ALN}.clean.sam
-samtools view ${CHM13_ALN}.real.minimap2.bam > ${CHM13_ALN}.clean.sam
+samtools sort ${OWN_HAP_ALN}.real.minimap2.bam | samtools depth -a - > ${OWN_HAP_ALN}.depth.tsv
+samtools sort ${NEIGHBOR_ALN}.real.minimap2.bam | samtools depth -a - > ${NEIGHBOR_ALN}.depth.tsv
+samtools sort ${CHM13_ALN}.real.minimap2.bam | samtools depth -a - > ${CHM13_ALN}.depth.tsv
 
 # Get per-node depths for sampled graph
 vg convert --gfa-out ${SAMPLED_GRAPH}.real.gbz > ${SAMPLED_GRAPH}.real.gfa

@@ -41,7 +41,7 @@ import matplotlib.patches as mplpatches # Rectangles
 import matplotlib.pyplot as plt # Basic plotting
 
 BIN_SIZE = 10_000
-"""How wide are bins for the barplots?"""
+"""How wide are bins for the barplots? 1-->BIN_SIZE is first bin."""
 
 # Use custom TTF for font
 arial = fm.FontEntry(fname='./input_data/arial.ttf', name='Arial')
@@ -67,6 +67,8 @@ panelD_top_loc = (4.75, 3.5, 3, 0.5)
 panelD_main_loc = (4.75, 0.45, 3, 3)
 panelD_right_loc = (7.8, 0.45, 0.5, 3)
 
+# ==== general helpers ====
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--truth-reads-sam', required=True,
@@ -91,7 +93,14 @@ def parse_args() -> argparse.Namespace:
                         help='Prefix for svg/png outputs')
     return parser.parse_args()
 
-# === data collection functions ====
+def coord_to_bin(coord: int) -> int:
+    """Convert raw coordinate to a BIN_SIZE bin start."""
+    # Round down, with all of 1-->BIN_SIZE ending up at 0
+    bin_index = int((coord - 1) // BIN_SIZE)
+    # Convert back to a bin start
+    return (bin_index * BIN_SIZE) + 1
+
+# ==== data collection functions ====
 
 def get_hap_len(fasta_file: str) -> int:
     """Calculate length of a haplotype from its FASTA file.
@@ -113,6 +122,24 @@ def read_truth_pos(sam_file: str) -> Dict[str, int]:
             parts = line.split('\t')
             read_starts[parts[0]] = int(parts[3])
     return read_starts
+
+def read_coverage(depth_tsv: str, hap_len: int) -> Dict[int, int]:
+    """Read a TSV from `samtools depth` into binned average coverage values."""
+    bin_cov = dict()
+    cur_total_cov = 0
+    with open(depth_tsv) as file:
+        for line in file:
+            parts = line.split('\t')
+            pos = int(parts[1])
+            cur_total_cov += int(parts[2])
+            if pos % BIN_SIZE:
+                # We've reached the end of a bin; save average
+                bin_cov[coord_to_bin(pos)] = cur_total_cov / BIN_SIZE
+                cur_total_cov = 0
+        last_bin = coord_to_bin(hap_len)
+        last_bin_length = hap_len + 1 - last_bin
+        bin_cov[last_bin] = cur_total_cov / last_bin_length
+    return bin_cov
 
 def read_identities(aln_tsv: str) -> Dict[str, float]:
     """Read a TSV with name/identity into a {read name : identity} dict."""
@@ -137,19 +164,31 @@ def panel_letter(panel: plt.Axes, letter: str) -> None:
     """Add a panel letter to the top-left corner."""
     panel.text(-0.15, 1.05, letter, transform=panel.transAxes)
 
-def coord_to_bin(coord: float) -> int:
-    """Convert raw coordinate to a BIN_SIZE bin start."""
-    return int(coord // BIN_SIZE) * BIN_SIZE
+def plot_depth_barchart(panel: plt.Axes, bin_cov: Dict[int, int],
+                        hap_len: int) -> None:
+    """Plot binned average depth barchart."""
+    max_cov = 0
+    for bin_start, cur_cov in bin_cov.items():
+        max_cov = max(max_cov, cur_cov)
+        if cur_cov:
+            panel.add_patch(mplpatches.Rectangle(
+                    (bin_start, 0), 
+                    BIN_SIZE, cur_cov, 
+                    facecolor='black'
+                ))
+
+    panel.set_ylabel('depth')
+    panel.set_xlim(1, hap_len)
+    panel.set_ylim(0, max_cov)
+    panel.set_xticks([])
+    panel.set_yticks([])
 
 def plot_identity_barchart(panel: plt.Axes, read_id_vals: Dict[str, float],
                            read_starts: Dict[str, int], hap_len: int) -> None:
     """Plot binned average identity sideways barchart."""
-    # Interesting identity range is between 0.9 and 1
-    panel.set_xlim(0.9, 1)
-    panel.set_ylim(0, hap_len)
-    panel.set_yticks([])
     # Collect all identity values in each bin
-    bins = {bin_start: [] for bin_start in range(0, hap_len, BIN_SIZE)}
+    bins = {bin_start + 1: [] for bin_start 
+            in range(0, coord_to_bin(hap_len), BIN_SIZE)}
     for name, id_val in read_id_vals.items():
         cur_bin = coord_to_bin(read_starts[name])
         bins[cur_bin].append(id_val)
@@ -162,23 +201,38 @@ def plot_identity_barchart(panel: plt.Axes, read_id_vals: Dict[str, float],
                     avg_id, BIN_SIZE, 
                     facecolor='black'
                 ))
+            
+    panel.set_xlabel('identity')
+    # Interesting identity range is between 0.9 and 1
+    panel.set_xlim(0.9, 1)
+    panel.set_ylim(1, hap_len)
+    panel.set_xticks([])
+    panel.set_yticks([])
 
 if __name__ == '__main__':
     args = parse_args()
     hap_prefix = f'{args.chromosome}.{args.haplotype_name}'
+    aln_prefix = os.path.join(args.aln_dir, hap_prefix)
 
     # Get data
-    hap_len = get_hap_len(os.path.join(args.fasta_dir, f'{hap_prefix}.fasta'))
     truth_pos = read_truth_pos(args.truth_reads_sam)
 
-    chm13_id_vals = read_identities(
-        os.path.join(args.aln_dir, f'{hap_prefix}.CHM13.real.minimap2.tsv'))
-    neighbor_id_vals = read_identities(
-        os.path.join(args.aln_dir, f'{hap_prefix}.neighbor.real.minimap2.tsv'))
-    sampled_id_vals = read_identities(
-        os.path.join(args.aln_dir, f'{hap_prefix}.sampled.real.giraffe.tsv'))
-    self_id_vals = read_identities(
-        os.path.join(args.aln_dir, f'{hap_prefix}.own_hap.real.minimap2.tsv'))
+    chm13_len = get_hap_len(
+        os.path.join(args.fasta_dir, f'{args.chromosome}.CHM13.fasta'))
+    neighbor_len = get_hap_len(
+        os.path.join(args.fasta_dir, 
+                     f'{args.chromosome}.{args.neighbor_name}.fasta'))
+    self_len = get_hap_len(os.path.join(args.fasta_dir, f'{hap_prefix}.fasta'))
+
+    chm13_depth = read_coverage(f'{aln_prefix}.CHM13.depth.tsv', chm13_len)
+    neighbor_depth = read_coverage(f'{aln_prefix}.neighbor.depth.tsv', 
+                                   neighbor_len)
+    self_depth = read_coverage(f'{aln_prefix}.own_hap.depth.tsv', self_len)
+
+    chm13_id = read_identities(f'{aln_prefix}.CHM13.real.minimap2.tsv')
+    neighbor_id = read_identities(f'{aln_prefix}.neighbor.real.minimap2.tsv')
+    sampled_id = read_identities(f'{aln_prefix}.sampled.real.giraffe.tsv')
+    self_id = read_identities(f'{aln_prefix}.own_hap.real.minimap2.tsv')
     
     # Make panels
     fig = plt.figure(figsize=figure_size, dpi=figure_dpi)
@@ -199,11 +253,14 @@ if __name__ == '__main__':
     panelD_right = set_up_panel(figure_size, panelD_right_loc)
 
     # Do plotting
+    plot_depth_barchart(panelA_top, chm13_depth, chm13_len)
+    plot_depth_barchart(panelB_top, neighbor_depth, neighbor_len)
+    plot_depth_barchart(panelD_top, self_depth, self_len)
 
-    plot_identity_barchart(panelA_right, chm13_id_vals, truth_pos, hap_len)
-    plot_identity_barchart(panelB_right, neighbor_id_vals, truth_pos, hap_len)
-    plot_identity_barchart(panelC_right, sampled_id_vals, truth_pos, hap_len)
-    plot_identity_barchart(panelD_right, self_id_vals, truth_pos, hap_len)
+    plot_identity_barchart(panelA_right, chm13_id, truth_pos, self_len)
+    plot_identity_barchart(panelB_right, neighbor_id, truth_pos, self_len)
+    plot_identity_barchart(panelC_right, sampled_id, truth_pos, self_len)
+    plot_identity_barchart(panelD_right, self_id, truth_pos, self_len)
 
     panel_letter(panelA_main, 'a')
     panel_letter(panelB_main, 'b')
