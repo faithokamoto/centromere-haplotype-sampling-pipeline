@@ -87,6 +87,7 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
 - **CIGAR strings for some chr10 HG01106.1 assembly alignments**  
     - `input_data/pairwise_cigar_CHM13.0_HG01106.1.txt`
     - `input_data/pairwise_cigar_HG01106.1_HG01891.2.txt`
+- **Arial** the font, `input_data/arial.ttf`
 
 ## Files
 

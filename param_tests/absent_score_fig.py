@@ -42,7 +42,7 @@ import matplotlib.patches as mplpatches # Rectangles
 import matplotlib.pyplot as plt # Basic plotting
 
 # Use custom TTF for font
-arial = fm.FontEntry(fname='./param_tests/arial.ttf', name='Arial')
+arial = fm.FontEntry(fname='./input_data/arial.ttf', name='Arial')
 fm.fontManager.ttflist.insert(0, arial)
 plt.rcParams['font.family'] = arial.name
 
