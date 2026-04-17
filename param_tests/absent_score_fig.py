@@ -83,7 +83,7 @@ def parse_args() -> argparse.Namespace:
                         help='Prefix for svg/png outputs')
     return parser.parse_args()
 
-# === data collection functions ====
+# ==== data collection functions ====
 
 def read_depth_stats(log_file: str) -> Tuple[str, float]:
     """Read the top haplotype & its private depth from log file.
