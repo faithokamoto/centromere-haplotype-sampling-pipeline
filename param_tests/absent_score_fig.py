@@ -226,7 +226,7 @@ def panel_letter(panel: plt.Axes, letter: str) -> None:
 def depth_to_bin(depth: float) -> float:
     """Convert raw depth to a histogram bin value.
     
-    Cap to DPETH_MAX (30) and then round down to an 0.5 increment.
+    Cap to DEPTH_MAX (30) and then round down to an 0.5 increment.
     """
     return int(min(depth, DEPTH_MAX) * 2) / 2
 
