@@ -67,15 +67,3 @@ samtools view $SAMPLE_TMP/chr10.sam | sed "s/$old_path_name/$new_path_name/" > $
     $SAMPLE_TMP/no_header.sam > ${READS}.real.truth.sam
 
 rm -rf $SAMPLE_TMP
-
-# ---- ModDotPlot; use "venv" pip environment ----
-
-# Self-identity plot
-moddotplot static --fasta $GRAPH_DIR/$PREFIX.fasta \
-    --no-plot --output-dir plot_outputs
-# vs. CHM13
-moddotplot static --fasta $GRAPH_DIR/$PREFIX.fasta $GRAPH_DIR/$CHROM.CHM13.fasta \
-    --compare-only --no-plot --output-dir plot_outputs
-# vs. neighbor
-moddotplot static --fasta $GRAPH_DIR/$PREFIX.fasta $GRAPH_DIR/$CHROM.HG01891.2.fasta \
-    --compare-only --no-plot --output-dir plot_outputs

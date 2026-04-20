@@ -7,22 +7,11 @@ undergone [haplotype sampling][HaplotypeSampling].
 
 - [`vg`][vg] currently version `v1.73.0-33-gbf85ab04b` with extra haplotype
     sampling information ([this print][ExtraPrint]) turned on
-- [`ModDotPlot`][ModDotPlot] version `v0.9.9` installed from source and using
-    its default environemnt
 
 Most commands are run within this Conda environment:
 ```bash
 conda create -n cenhap-sample -c conda-forge -c bioconda \
     kmc matplotlib minimap2 samtools
-```
-
-The ModDotPlot commands, at the end of `moddotplot/massage_inputs.sh`, are run
-within its default virtual environment, and NOT within the Conda environment.
-```bash
-git clone https://github.com/marbl/ModDotPlot.git
-cd ModDotPlot
-python -m venv venv
-source venv/bin/activate
 ```
 
 ## Background
@@ -84,9 +73,6 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
   `/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/per_smp_asat_beds/`
 - **Graph-unique k-mer counts per chr4 haplotype** (for parameter search)  
   `input_data/chr4.txt`
-- **CIGAR strings for some chr10 HG01106.1 assembly alignments**  
-    - `input_data/pairwise_cigar_CHM13.0_HG01106.1.txt`
-    - `input_data/pairwise_cigar_HG01106.1_HG01891.2.txt`
 - **Arial** the font, `input_data/arial.ttf`
 
 ## Files
