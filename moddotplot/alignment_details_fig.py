@@ -39,7 +39,7 @@ fm.fontManager.ttflist.insert(0, arial)
 plt.rcParams['font.family'] = arial.name
 
 # Total figure
-figure_size = (8.5, 3.25) # (width, height)
+figure_size = (8.5, 3.15) # (width, height)
 figure_dpi = 600
 # All panels have the same dimensions
 panel_width = 3
@@ -113,7 +113,7 @@ def read_coverage(depth_tsv: str, hap_len: int) -> Dict[int, int]:
             parts = line.split('\t')
             pos = int(parts[1])
             cur_total_cov += int(parts[2])
-            if pos % BIN_SIZE:
+            if pos % BIN_SIZE == 0:
                 # We've reached the end of a bin; save average
                 bin_cov[coord_to_bin(pos)] = cur_total_cov / BIN_SIZE
                 cur_total_cov = 0
@@ -142,10 +142,6 @@ def set_up_panel(figsize: Tuple[float, float],
     panel.set_xticks([])
     panel.set_yticks([])
     return panel
-
-def panel_letter(panel: plt.Axes, letter: str) -> None:
-    """Add a panel letter to the top-left corner."""
-    panel.text(-0.1, 1.5, letter, transform=panel.transAxes)
 
 def row_label(panel: plt.Axes, label: str) -> None:
     """Add a row label to the left of the left column."""
@@ -244,9 +240,6 @@ if __name__ == '__main__':
     plot_depth_barchart(chm13_depth_panel, chm13_depth, chm13_len)
     plot_depth_barchart(neighbor_depth_panel, neighbor_depth, neighbor_len)
     plot_depth_barchart(self_depth_panel, self_depth, self_len)
-
-    panel_letter(chm13_id_panel, 'a')
-    panel_letter(chm13_depth_panel, 'b')
 
     row_label(chm13_id_panel, 'CHM13')
     row_label(neighbor_id_panel, args.neighbor_name)
