@@ -5,15 +5,8 @@ This figure focuses on the chr10 haplotype for HG01106.1.
 
 ====Plot description ====
 
-Panels A (vs. CHM13), B (vs. HG01891.2), and D (vs. itself) are the same
-kind of plot.
-- The main subpanel has a similarity comparison as output by ModDotPlot,
-overlaid with CIGAR string from the Centrolign alignment.
-- The top subpanel has a bar plot with average depth in 10kb bins.
-- The right-hand subpanel has a bar plot with average identity in 10kb bins.
-
-Panel C still has the same right-hand subpanel, but no top subpanel,
-and its main panel is an image of the personalized graph colored by depth.
+Rows are vs. CHM13, vs. HG01891.2, vs. a personalized graph, and vs. self
+Cols are identity for reads hailing from a location, and depth on linear ref.
 
 ==== How I ran this ====
 
@@ -24,9 +17,6 @@ From within /private/home/fokamoto/centromere-haplotype-sampling-pipeline
     -c chr10 -H HG01106.1 -N HG01891.2 \
     -a /private/groups/patenlab/fokamoto/centrolign/alignments/haploid \
     -f /private/groups/patenlab/fokamoto/centrolign/graph/haploid \
-    -m plot_outputs \
-    -cc input_data/pairwise_cigar_CHM13.0_HG01106.1.txt \
-    -nc input_data/pairwise_cigar_HG01106.1_HG01891.2.txt \
     -o plot_outputs/aln_details
 """
 
@@ -49,23 +39,20 @@ fm.fontManager.ttflist.insert(0, arial)
 plt.rcParams['font.family'] = arial.name
 
 # Total figure
-figure_size = (8.75, 8.75) # (width, height)
+figure_size = (8.5, 3.25) # (width, height)
 figure_dpi = 600
+# All panels have the same dimensions
+panel_width = 3
+panel_height = 0.5
 # Panel locations
-panelA_top_loc = (0.45, 7.8, 3, 0.5) # (left, bottom, width, height)
-panelA_main_loc = (0.45, 4.75, 3, 3)
-panelA_right_loc = (3.5, 4.75, 0.5, 3)
+chm13_id_loc = (1.75, 2.3) # (left, bottom)
+neighbor_id_loc = (1.75, 1.6)
+sampled_id_loc = (1.75, 0.9)
+self_id_loc = (1.75, 0.2)
 
-panelB_top_loc = (4.75, 7.8, 3, 0.5)
-panelB_main_loc = (4.75, 4.75, 3, 3)
-panelB_right_loc = (7.8, 4.75, 0.5, 3)
-
-panelC_main_loc = (0.45, 0.45, 3, 3)
-panelC_right_loc = (3.5, 0.45, 0.5, 3)
-
-panelD_top_loc = (4.75, 3.5, 3, 0.5)
-panelD_main_loc = (4.75, 0.45, 3, 3)
-panelD_right_loc = (7.8, 0.45, 0.5, 3)
+chm13_depth_loc = (5.25, 2.3) # (left, bottom)
+neighbor_depth_loc = (5.25, 1.6)
+self_depth_loc = (5.25, 0.2)
 
 # ==== general helpers ====
 
@@ -83,12 +70,6 @@ def parse_args() -> argparse.Namespace:
                         help='Directory with SAMs/TSVs from alignments')
     parser.add_argument('-f', '--fasta-dir', required=True,
                         help='Directory with FASTAs for haplotypes')
-    parser.add_argument('-m', '--moddotplot-dir', required=True,
-                        help='Directory with ModDotPlot BEDs')
-    parser.add_argument('-cc', '--chm13-cigar', required=True,
-                        help='Centrolign CIGAR for assembly vs. CHM13')
-    parser.add_argument('-nc', '--neighbor-cigar', required=True,
-                        help='Centrolign CIGAR for assembly vs. neighbor')
     parser.add_argument('-o', '--output-prefix', required=True,
                         help='Prefix for svg/png outputs')
     return parser.parse_args()
@@ -154,15 +135,46 @@ def read_identities(aln_tsv: str) -> Dict[str, float]:
 # ==== plotting functions ====
 
 def set_up_panel(figsize: Tuple[float, float],
-                 loc: Tuple[float, float, float, float]) -> plt.Axes:
-    """Create a panel at (bottom, left, width, height)."""
+                 loc: Tuple[float, float]) -> plt.Axes:
+    """Create a panel at (bottom, left)."""
     panel = plt.axes([loc[0] / figsize[0], loc[1] / figsize[1],
-                     loc[2] / figsize[0], loc[3] / figsize[1]])
+                     panel_width / figsize[0], panel_height / figsize[1]])
+    panel.set_xticks([])
+    panel.set_yticks([])
     return panel
 
 def panel_letter(panel: plt.Axes, letter: str) -> None:
     """Add a panel letter to the top-left corner."""
-    panel.text(-0.15, 1.05, letter, transform=panel.transAxes)
+    panel.text(-0.1, 1.5, letter, transform=panel.transAxes)
+
+def row_label(panel: plt.Axes, label: str) -> None:
+    """Add a row label to the left of the left column."""
+    panel.text(-0.5, 0.5, label, transform=panel.transAxes,
+               horizontalalignment='left', verticalalignment='center')
+
+def plot_identity_barchart(panel: plt.Axes, read_id_vals: Dict[str, float],
+                           read_starts: Dict[str, int], hap_len: int) -> None:
+    """Plot binned average identity barchart."""
+    # Collect all identity values in each bin
+    bins = {bin_start + 1: [] for bin_start 
+            in range(0, coord_to_bin(hap_len), BIN_SIZE)}
+    for name, id_val in read_id_vals.items():
+        cur_bin = coord_to_bin(read_starts[name])
+        bins[cur_bin].append(id_val)
+
+    for bin_start, id_vals in bins.items():
+        if id_vals:
+            avg_id = sum(id_vals) / len(id_vals)
+            panel.add_patch(mplpatches.Rectangle(
+                    (bin_start, 0), 
+                    BIN_SIZE, avg_id,
+                    facecolor='black'
+                ))
+
+    # Interesting identity range is between 0.9 and 1
+    panel.set_xlim(1, hap_len)
+    panel.set_ylim(0.9, 1)
+    panel.set_yticks([0.9, 1], ['.9', '1'])
 
 def plot_depth_barchart(panel: plt.Axes, bin_cov: Dict[int, int],
                         hap_len: int) -> None:
@@ -177,37 +189,12 @@ def plot_depth_barchart(panel: plt.Axes, bin_cov: Dict[int, int],
                     facecolor='black'
                 ))
 
-    panel.set_ylabel('depth')
     panel.set_xlim(1, hap_len)
     panel.set_ylim(0, max_cov)
-    panel.set_xticks([])
-    panel.set_yticks([])
 
-def plot_identity_barchart(panel: plt.Axes, read_id_vals: Dict[str, float],
-                           read_starts: Dict[str, int], hap_len: int) -> None:
-    """Plot binned average identity sideways barchart."""
-    # Collect all identity values in each bin
-    bins = {bin_start + 1: [] for bin_start 
-            in range(0, coord_to_bin(hap_len), BIN_SIZE)}
-    for name, id_val in read_id_vals.items():
-        cur_bin = coord_to_bin(read_starts[name])
-        bins[cur_bin].append(id_val)
-
-    for bin_start, id_vals in bins.items():
-        if id_vals:
-            avg_id = sum(id_vals) / len(id_vals)
-            panel.add_patch(mplpatches.Rectangle(
-                    (0, bin_start), 
-                    avg_id, BIN_SIZE, 
-                    facecolor='black'
-                ))
-            
-    panel.set_xlabel('identity')
-    # Interesting identity range is between 0.9 and 1
-    panel.set_xlim(0.9, 1)
-    panel.set_ylim(1, hap_len)
-    panel.set_xticks([])
-    panel.set_yticks([])
+    # Floor to one decimal place
+    top_tick = int(max_cov * 10) / 10
+    panel.set_yticks([0, top_tick])
 
 if __name__ == '__main__':
     args = parse_args()
@@ -237,35 +224,41 @@ if __name__ == '__main__':
     # Make panels
     fig = plt.figure(figsize=figure_size, dpi=figure_dpi)
 
-    panelA_top = set_up_panel(figure_size, panelA_top_loc)
-    panelA_main = set_up_panel(figure_size, panelA_main_loc)
-    panelA_right = set_up_panel(figure_size, panelA_right_loc)
+    chm13_id_panel = set_up_panel(figure_size, chm13_id_loc)
+    chm13_depth_panel = set_up_panel(figure_size, chm13_depth_loc)
     
-    panelB_top = set_up_panel(figure_size, panelB_top_loc)
-    panelB_main = set_up_panel(figure_size, panelB_main_loc)
-    panelB_right = set_up_panel(figure_size, panelB_right_loc)
-    
-    panelC_main = set_up_panel(figure_size, panelC_main_loc)
-    panelC_right = set_up_panel(figure_size, panelC_right_loc)
-    
-    panelD_top = set_up_panel(figure_size, panelD_top_loc)
-    panelD_main = set_up_panel(figure_size, panelD_main_loc)
-    panelD_right = set_up_panel(figure_size, panelD_right_loc)
+    neighbor_id_panel = set_up_panel(figure_size, neighbor_id_loc)
+    neighbor_depth_panel = set_up_panel(figure_size, neighbor_depth_loc)
+
+    sampled_id_panel = set_up_panel(figure_size, sampled_id_loc)
+
+    self_id_panel = set_up_panel(figure_size, self_id_loc)
+    self_depth_panel = set_up_panel(figure_size, self_depth_loc)
 
     # Do plotting
-    plot_depth_barchart(panelA_top, chm13_depth, chm13_len)
-    plot_depth_barchart(panelB_top, neighbor_depth, neighbor_len)
-    plot_depth_barchart(panelD_top, self_depth, self_len)
+    plot_identity_barchart(chm13_id_panel, chm13_id, truth_pos, self_len)
+    plot_identity_barchart(neighbor_id_panel, neighbor_id, truth_pos, self_len)
+    plot_identity_barchart(sampled_id_panel, sampled_id, truth_pos, self_len)
+    plot_identity_barchart(self_id_panel, self_id, truth_pos, self_len)
 
-    plot_identity_barchart(panelA_right, chm13_id, truth_pos, self_len)
-    plot_identity_barchart(panelB_right, neighbor_id, truth_pos, self_len)
-    plot_identity_barchart(panelC_right, sampled_id, truth_pos, self_len)
-    plot_identity_barchart(panelD_right, self_id, truth_pos, self_len)
+    plot_depth_barchart(chm13_depth_panel, chm13_depth, chm13_len)
+    plot_depth_barchart(neighbor_depth_panel, neighbor_depth, neighbor_len)
+    plot_depth_barchart(self_depth_panel, self_depth, self_len)
 
-    panel_letter(panelA_main, 'a')
-    panel_letter(panelB_main, 'b')
-    panel_letter(panelC_main, 'c')
-    panel_letter(panelD_main, 'd')
+    panel_letter(chm13_id_panel, 'a')
+    panel_letter(chm13_depth_panel, 'b')
+
+    row_label(chm13_id_panel, 'CHM13')
+    row_label(neighbor_id_panel, args.neighbor_name)
+    row_label(sampled_id_panel, 'Personalized graph')
+    row_label(self_id_panel, args.haplotype_name)
+
+    # Column labels
+    chm13_id_panel.set_title('Alignment identity')
+    chm13_depth_panel.set_title('Read depth')
+
+    self_id_panel.set_xlabel('Truth pos of read')
+    self_depth_panel.set_xlabel('Pos along linear ref')
 
     fig.savefig(f'{args.output_prefix}.png')
     fig.savefig(f'{args.output_prefix}.svg')
