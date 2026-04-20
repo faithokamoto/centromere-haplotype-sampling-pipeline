@@ -12,7 +12,7 @@ Cols are identity for reads hailing from a location, and depth on linear ref.
 
 From within /private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
-./moddotplot/alignment_details_fig.py \
+./hap_focus/alignment_details_fig.py \
     -r /private/groups/patenlab/fokamoto/centrolign/to_align/chr10.HG01106.1.real.truth.sam \
     -c chr10 -H HG01106.1 -N HG01891.2 \
     -a /private/groups/patenlab/fokamoto/centrolign/alignments/haploid \
