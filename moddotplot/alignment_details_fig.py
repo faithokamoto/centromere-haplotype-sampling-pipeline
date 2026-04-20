@@ -157,7 +157,7 @@ def plot_identity_barchart(panel: plt.Axes, read_id_vals: Dict[str, float],
     """Plot binned average identity barchart."""
     # Collect all identity values in each bin
     bins = {bin_start + 1: [] for bin_start 
-            in range(0, coord_to_bin(hap_len), BIN_SIZE)}
+            in range(0, coord_to_bin(hap_len) + 1, BIN_SIZE)}
     for name, id_val in read_id_vals.items():
         cur_bin = coord_to_bin(read_starts[name])
         bins[cur_bin].append(id_val)
@@ -257,8 +257,8 @@ if __name__ == '__main__':
     chm13_id_panel.set_title('Alignment identity')
     chm13_depth_panel.set_title('Read depth')
 
-    self_id_panel.set_xlabel('Truth pos of read')
-    self_depth_panel.set_xlabel('Pos along linear ref')
+    self_id_panel.set_xlabel('Truth position of read')
+    self_depth_panel.set_xlabel('Alignment position along linear ref')
 
     fig.savefig(f'{args.output_prefix}.png')
     fig.savefig(f'{args.output_prefix}.svg')
