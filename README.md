@@ -122,6 +122,10 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
     - `LICENSE`: the MIT license as it applies to this repository
     - `README.md`: this file, which explains the repository
 
+Various scripts assume that certain files exist in `input_data`, and that
+certain directories exist in `log` (`chrX` for each chromosome, `default`,
+`diploid_typing`, `get_reads`, `slurm`, and `typing_tests` for me).
+
 [Bandage]: https://github.com/asl/BandageNG
 [Centrolign]: https://github.com/jeizenga/centrolign
 [ExtraPrint]: https://github.com/vgteam/vg/blob/bf85ab04b251e7a2bc308750d6c8c44afda213f5/src/recombinator.cpp#L12
