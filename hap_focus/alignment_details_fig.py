@@ -403,7 +403,6 @@ if __name__ == '__main__':
     # Column letters
     panel_letter(chm13_id_panel, 'a')
     panel_letter(chm13_depth_panel, 'b')
-    panel_letter(hap1_depth_panel, 'c')
 
     fig.savefig(f'{args.output_prefix}.png')
     fig.savefig(f'{args.output_prefix}.svg')
