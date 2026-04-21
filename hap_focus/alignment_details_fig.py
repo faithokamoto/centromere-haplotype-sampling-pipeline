@@ -3,10 +3,31 @@
 
 This figure focuses on the chr10 haplotype for HG01106.1.
 
-====Plot description ====
+==== Plot description ====
 
 Rows are vs. CHM13, vs. HG01891.2, vs. a personalized graph, and vs. self
-Cols are identity for reads hailing from a location, and depth on linear ref.
+Cols are identity for reads hailing from a location, depth on linear ref,
+then depth on the nodes each sampled haplotype contributes.
+
+==== Inputs ====
+
+General "prefix" means <--chromosome>.<--haplotype-name>
+
+- Truth read positions (--truth-reads-sam) in SAM format.
+- Linear reference FASTAs (<--graph-dir>/<--chromosome>.<name>.fasta)
+    For CHM13, --haplotype-name, and --neighbor-name.
+    Assumes each has only one contig and thus one header line.
+- Personalized graph (<--graph-dir>/<prefix>.sampled.real.gfa)
+    with sampled haplotypes as W lines that only contain forward walks.
+- Haplotype sampling logs (<--graph-dir>/<prefix>.guess.real.log)
+    with lines like "Selected haplotype <name> with score <score>".
+- Alignment identity TSVs (<--aln-dir>/<prefix>.<ref>.real.<mapper>.tsv)
+    Uses minimap2 for CHM13, neighbor, and own_hap; giraffe for sampled.
+    First column is read name, second is identity. Skips header row.
+- Linear ref depth TSVs (<--aln-dir>/<prefix>.<ref>.depth.tsv)
+    From `samtools depth`, for CHM13, neighbor, and own_hap.
+- GFA per-pos depth TSV (<--aln-dir>/<prefix>.sampled.real.giraffe.pos.depth)
+    From `vg pack --as-table`.
 
 ==== How I ran this ====
 
