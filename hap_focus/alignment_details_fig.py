@@ -45,19 +45,14 @@ figure_dpi = 600
 panel_width = 3
 panel_height = 0.5
 # Panel locations
-chm13_id_loc = (1.75, 2.3) # (left, bottom)
-neighbor_id_loc = (1.75, 1.6)
-sampled_id_loc = (1.75, 0.9)
-self_id_loc = (1.75, 0.2)
+col1_x = 1.75
+col2_x = 5.25
+col3_x = 9
 
-chm13_depth_loc = (5.25, 2.3)
-neighbor_depth_loc = (5.25, 1.6)
-self_depth_loc = (5.25, 0.2)
-
-hap1_depth_loc = (8.75, 2.3)
-hap2_depth_loc = (8.75, 1.6)
-hap3_depth_loc = (8.75, 0.9)
-hap4_depth_loc = (8.75, 0.2)
+row1_y = 2.3
+row2_y = 1.6
+row3_y = 0.9
+row4_y = 0.2
 
 # ==== general helpers ====
 
@@ -228,18 +223,21 @@ def bin_walk_depths(pos_depths: Dict[int, List[int]],
 
 # ==== plotting functions ====
 
-def set_up_panel(figsize: Tuple[float, float],
-                 loc: Tuple[float, float]) -> plt.Axes:
+def set_up_panel(figsize: Tuple[float, float], x: float, y: float) -> plt.Axes:
     """Create a panel at (bottom, left)."""
-    panel = plt.axes([loc[0] / figsize[0], loc[1] / figsize[1],
+    panel = plt.axes([x / figsize[0], y / figsize[1],
                      panel_width / figsize[0], panel_height / figsize[1]])
     panel.set_xticks([])
     panel.set_yticks([])
     return panel
 
+def panel_letter(panel: plt.Axes, letter: str) -> None:
+    """Add a panel letter to the top-left corner."""
+    panel.text(-0.1, 1.35, letter, transform=panel.transAxes)
+
 def row_label(panel: plt.Axes, label: str, left: bool) -> None:
     """Add a row label to the side of a column."""
-    x = -0.5 if left else 1.1
+    x = -0.5 if left else 1.05
     panel.text(x, 0.5, label, transform=panel.transAxes,
                horizontalalignment='left', verticalalignment='center')
 
@@ -293,7 +291,7 @@ if __name__ == '__main__':
     aln_prefix = os.path.join(args.aln_dir, hap_prefix)
     graph_prefix = os.path.join(args.graph_dir, hap_prefix)
 
-    # Get data
+    # ---- data ----
     truth_pos = read_truth_pos(args.truth_reads_sam)
 
     chm13_len = get_hap_len(
@@ -322,26 +320,28 @@ if __name__ == '__main__':
     hap3_bins = bin_walk_depths(pos_depths, walk_nodes[3][0])
     hap4_bins = bin_walk_depths(pos_depths, walk_nodes[4][0])
 
-    # Make panels
+    # ---- panels ----
+
     fig = plt.figure(figsize=figure_size, dpi=figure_dpi)
 
-    chm13_id_panel = set_up_panel(figure_size, chm13_id_loc)
-    chm13_depth_panel = set_up_panel(figure_size, chm13_depth_loc)
+    chm13_id_panel = set_up_panel(figure_size, col1_x, row1_y)
+    chm13_depth_panel = set_up_panel(figure_size, col2_x, row1_y)
     
-    neighbor_id_panel = set_up_panel(figure_size, neighbor_id_loc)
-    neighbor_depth_panel = set_up_panel(figure_size, neighbor_depth_loc)
+    neighbor_id_panel = set_up_panel(figure_size, col1_x, row2_y)
+    neighbor_depth_panel = set_up_panel(figure_size, col2_x, row2_y)
 
-    sampled_id_panel = set_up_panel(figure_size, sampled_id_loc)
+    sampled_id_panel = set_up_panel(figure_size, col1_x, row3_y)
 
-    self_id_panel = set_up_panel(figure_size, self_id_loc)
-    self_depth_panel = set_up_panel(figure_size, self_depth_loc)
+    self_id_panel = set_up_panel(figure_size, col1_x, row4_y)
+    self_depth_panel = set_up_panel(figure_size, col2_x, row4_y)
 
-    hap1_depth_panel = set_up_panel(figure_size, hap1_depth_loc)
-    hap2_depth_panel = set_up_panel(figure_size, hap2_depth_loc)
-    hap3_depth_panel = set_up_panel(figure_size, hap3_depth_loc)
-    hap4_depth_panel = set_up_panel(figure_size, hap4_depth_loc)
+    hap1_depth_panel = set_up_panel(figure_size, col3_x, row1_y)
+    hap2_depth_panel = set_up_panel(figure_size, col3_x, row2_y)
+    hap3_depth_panel = set_up_panel(figure_size, col3_x, row3_y)
+    hap4_depth_panel = set_up_panel(figure_size, col3_x, row4_y)
 
-    # Do plotting
+    # ---- plots ----
+
     plot_identity_barchart(chm13_id_panel, chm13_id, truth_pos, self_len)
     plot_identity_barchart(neighbor_id_panel, neighbor_id, truth_pos, self_len)
     plot_identity_barchart(sampled_id_panel, sampled_id, truth_pos, self_len)
@@ -355,6 +355,8 @@ if __name__ == '__main__':
     plot_depth_barchart(hap2_depth_panel, hap2_bins, walk_nodes[2][1])
     plot_depth_barchart(hap3_depth_panel, hap3_bins, walk_nodes[3][1])
     plot_depth_barchart(hap4_depth_panel, hap4_bins, walk_nodes[4][1])
+
+    # ---- labels ----
 
     # Labels for cols 1-2
     row_label(chm13_id_panel, 'CHM13', True)
@@ -370,12 +372,17 @@ if __name__ == '__main__':
 
     # Column labels
     chm13_id_panel.set_title('Alignment identity')
-    chm13_depth_panel.set_title('Read depth')
+    chm13_depth_panel.set_title('Read depth on reference')
     hap1_depth_panel.set_title('Read depth on novel sequence')
 
     self_id_panel.set_xlabel('Truth position of read')
     self_depth_panel.set_xlabel('Alignment position along linear ref')
     hap4_depth_panel.set_xlabel('Alignment position along sampled hap')
+
+    # Column letters
+    panel_letter(chm13_id_panel, 'a')
+    panel_letter(chm13_depth_panel, 'b')
+    panel_letter(hap1_depth_panel, 'c')
 
     fig.savefig(f'{args.output_prefix}.png')
     fig.savefig(f'{args.output_prefix}.svg')
