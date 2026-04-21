@@ -56,6 +56,14 @@ for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
 8. Collect experiment data (`data_scripts`)
     - `haploid_data.py`
     - `diploid_data.py`
+9. Analayze HG01106.1 on chr10 (`hap_focus`)
+    - `retain_files_alignments.sh`
+    - `massage_inputs.sh`
+    - `annotate_depths.py`
+    - `alignment_details_fig.py`
+    - Finish up with two outside operations:
+        - Take the annotated GFA and visualize with [BandageNG][Bandage].
+        - Add a curly brace to the `alignment_details_fig.py` output.
 
 ## Inputs
 
@@ -87,6 +95,11 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
     - `get_reads.sh`: prepare reads & linear references for a haplotype
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
     - `slurm_get_reads.sh`: run `get_reads.sh` on haplo/chrom pairs
+- **Focused analysis of one haplotype** (`hap_focus`)
+    - `alignment_details_fig.py`: create chr10 HG01106.1 supplementary figure
+    - `annotate_depths.py`: add `DP` tags to a GFA, given `vg pack` output
+    - `massage_inputs.sh`: reshape default alignment outputs for easier plotting
+    - `retain_files_alignments.sh`: simplified alignments with less cleanup
 - **Main pipeline helpers** (`helper_scripts`)
     - `align_reads_giraffe.sh`: align reads with Giraffe & get per-read stats
     - `align_reads_minimap2.sh`: align reads with Minimap2 & get per-read stats
@@ -109,6 +122,7 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
     - `LICENSE`: the MIT license as it applies to this repository
     - `README.md`: this file, which explains the repository
 
+[Bandage]: https://github.com/asl/BandageNG
 [Centrolign]: https://github.com/jeizenga/centrolign
 [ExtraPrint]: https://github.com/vgteam/vg/blob/bf85ab04b251e7a2bc308750d6c8c44afda213f5/src/recombinator.cpp#L12
 [HaplotypeSampling]: https://github.com/vgteam/vg/wiki/Haplotype-Sampling
