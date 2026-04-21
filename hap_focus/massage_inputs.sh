@@ -1,5 +1,5 @@
 #!/bin/bash
-# Set up inputs for moddotplot supplement (in practice, I ran interactively)
+# Set up inputs for supplement (in practice, I ran interactively)
 # Assumes you've run: retain_files_alignments.sh HG01106.1 chr10
 # Usage: massage_inputs.sh
 
@@ -25,7 +25,7 @@ NEIGHBOR_ALN=$ALN_DIR/${PREFIX}.neighbor
 CHM13_ALN=$ALN_DIR/${PREFIX}.CHM13
 SAMPLED_ALN=$ALN_DIR/${PREFIX}.sampled
 
-# ---- vg / samtools; use "cenhap-sample" Conda environment ----
+# ---- depth ----
 
 # BAMs have already had secondary/supplementary alignments filtered out
 samtools sort ${OWN_HAP_ALN}.real.minimap2.bam | samtools depth -a - > ${OWN_HAP_ALN}.depth.tsv
@@ -37,16 +37,10 @@ vg convert --gfa-out ${SAMPLED_GRAPH}.real.gbz > ${SAMPLED_GRAPH}.real.gfa
 vg pack -x ${SAMPLED_GRAPH}.real.gbz --gam ${SAMPLED_ALN}.real.giraffe.gam \
     --as-table > ${SAMPLED_ALN}.real.giraffe.pos.depth
 
-# Average depth per node across offsets https://unix.stackexchange.com/a/465815
-awk '{ 
-  sum[$2] += $4 
-  count[$2] += 1
-} 
-END { 
-  for (key in count) { 
-    print key, sum[key] / count[key] 
-  } 
-}' ${SAMPLED_ALN}.real.giraffe.pos.depth > ${SAMPLED_ALN}.real.giraffe.node.depth
+./hap_focus/annotate_depth.py -g ${SAMPLED_GRAPH}.real.gfa \
+    -d ${SAMPLED_ALN}.real.giraffe.pos.depth > ${SAMPLED_GRAPH}.annot.gfa
+
+# ---- truth coordinates ----
 
 # Get original BAM coordinates for each read
 reads=`grep "^$SAMPLE_ID," "./input_data/aws_file_locations.csv" | cut -f3 -d ","`
