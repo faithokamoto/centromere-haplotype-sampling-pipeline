@@ -16,7 +16,7 @@ From within /private/home/fokamoto/centromere-haplotype-sampling-pipeline
     -r /private/groups/patenlab/fokamoto/centrolign/to_align/chr10.HG01106.1.real.truth.sam \
     -c chr10 -H HG01106.1 -N HG01891.2 \
     -a /private/groups/patenlab/fokamoto/centrolign/alignments/haploid \
-    -f /private/groups/patenlab/fokamoto/centrolign/graph/haploid \
+    -g /private/groups/patenlab/fokamoto/centrolign/graph/haploid \
     -o plot_outputs/aln_details
 """
 
@@ -24,7 +24,7 @@ From within /private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
 import argparse # Command-line argument parsing
 import os # Filesystem interactions
-from typing import Dict, Tuple # Type hinting
+from typing import Dict, List, Tuple # Type hinting
 
 import matplotlib.font_manager as fm # Force Arial
 import matplotlib.patches as mplpatches # Rectangles
@@ -39,7 +39,7 @@ fm.fontManager.ttflist.insert(0, arial)
 plt.rcParams['font.family'] = arial.name
 
 # Total figure
-figure_size = (8.5, 3.15) # (width, height)
+figure_size = (13, 3.15) # (width, height)
 figure_dpi = 600
 # All panels have the same dimensions
 panel_width = 3
@@ -50,9 +50,14 @@ neighbor_id_loc = (1.75, 1.6)
 sampled_id_loc = (1.75, 0.9)
 self_id_loc = (1.75, 0.2)
 
-chm13_depth_loc = (5.25, 2.3) # (left, bottom)
+chm13_depth_loc = (5.25, 2.3)
 neighbor_depth_loc = (5.25, 1.6)
 self_depth_loc = (5.25, 0.2)
+
+hap1_depth_loc = (8.75, 2.3)
+hap2_depth_loc = (8.75, 1.6)
+hap3_depth_loc = (8.75, 0.9)
+hap4_depth_loc = (8.75, 0.2)
 
 # ==== general helpers ====
 
@@ -68,8 +73,8 @@ def parse_args() -> argparse.Namespace:
                         help='Name of neighbor haplotype')
     parser.add_argument('-a', '--aln-dir', required=True,
                         help='Directory with SAMs/TSVs from alignments')
-    parser.add_argument('-f', '--fasta-dir', required=True,
-                        help='Directory with FASTAs for haplotypes')
+    parser.add_argument('-g', '--graph-dir', required=True,
+                        help='Directory with FASTAs/graphs for haplotypes')
     parser.add_argument('-o', '--output-prefix', required=True,
                         help='Prefix for svg/png outputs')
     return parser.parse_args()
@@ -131,6 +136,63 @@ def read_identities(aln_tsv: str) -> Dict[str, float]:
             parts = line.split('\t')
             read_id_vals[parts[0]] = float(parts[1])
     return read_id_vals
+
+def read_walk_nodes(gfa_file: str) -> Dict[int, Tuple[List[int], int]]:
+    """Read nodes along walks into an ordered list.
+
+    Keys are the haplotype number from column 3.
+    Values are nodes in order along that walk.
+    
+    Assumes only '>' characters separate nodes, i.e. nothing backwards
+
+    Returns {hap num : ([nodes], path len)}
+    """
+    walk_nodes = dict()
+    with open(gfa_file) as file:
+        for line in file:
+            if line.startswith('W'):
+                parts = line.split()
+                hap_num = int(parts[2])
+                hap_len = int(parts[5])
+                # Extract node IDs from >1>3>274408>etc.
+                nodes = [int(node_id) for node_id in parts[6].split('>')[1:]]
+                walk_nodes[hap_num] = (nodes, hap_len)
+    return walk_nodes  
+
+def read_pos_depths(depth_tsv: str) -> Dict[int, List[int]]:
+    """Read a vg depths --as-table TSV into a {node : {offset : depth}} dict."""
+    pos_depths = dict()
+    with open(depth_tsv) as file:
+        file.readline() # Skip header line
+        for line in file:
+            parts = line.split('\t')
+            node_id = int(parts[1])
+            if not node_id in pos_depths:
+                pos_depths[node_id] = dict()
+            pos_depths[node_id][int(parts[2])] = int(parts[3])
+    for node_id, offset_depths in pos_depths.items():
+        dep_list = [offset_depths[off] for off in sorted(offset_depths.keys())]
+        pos_depths[node_id] = dep_list
+    return pos_depths
+
+def bin_walk_depths(pos_depths: Dict[int, List[int]], 
+                    hap_nodes: List[int]) -> Dict[int, int]:
+    """Get average depths within bins along a walk."""
+    bin_cov = dict()
+    cur_total_cov = 0
+    cur_pos = 1
+    for node in hap_nodes:
+        for depth in pos_depths[node]:
+            cur_total_cov += depth
+            if cur_pos % BIN_SIZE == 0:
+                # We've reached the end of a bin; save average
+                bin_cov[cur_pos] = cur_total_cov / BIN_SIZE
+                cur_total_cov = 0
+            cur_pos += 1
+    last_bin = coord_to_bin(cur_pos - 1)
+    last_bin_length = cur_pos - last_bin
+    bin_cov[last_bin] = cur_total_cov / last_bin_length
+    return bin_cov
 
 # ==== plotting functions ====
 
@@ -201,11 +263,11 @@ if __name__ == '__main__':
     truth_pos = read_truth_pos(args.truth_reads_sam)
 
     chm13_len = get_hap_len(
-        os.path.join(args.fasta_dir, f'{args.chromosome}.CHM13.fasta'))
+        os.path.join(args.graph_dir, f'{args.chromosome}.CHM13.fasta'))
     neighbor_len = get_hap_len(
-        os.path.join(args.fasta_dir, 
+        os.path.join(args.graph_dir, 
                      f'{args.chromosome}.{args.neighbor_name}.fasta'))
-    self_len = get_hap_len(os.path.join(args.fasta_dir, f'{hap_prefix}.fasta'))
+    self_len = get_hap_len(os.path.join(args.graph_dir, f'{hap_prefix}.fasta'))
 
     chm13_depth = read_coverage(f'{aln_prefix}.CHM13.depth.tsv', chm13_len)
     neighbor_depth = read_coverage(f'{aln_prefix}.neighbor.depth.tsv', 
@@ -217,6 +279,17 @@ if __name__ == '__main__':
     sampled_id = read_identities(f'{aln_prefix}.sampled.real.giraffe.tsv')
     self_id = read_identities(f'{aln_prefix}.own_hap.real.minimap2.tsv')
     
+#    -g /private/groups/patenlab/fokamoto/centrolign/graph/haploid/chr10.HG01106.1.sampled.real.gfa \
+#    -d /private/groups/patenlab/fokamoto/centrolign/alignments/haploid/chr10.HG01106.1.sampled.real.giraffe.pos.depth \
+
+    walk_nodes = read_walk_nodes(
+        os.path.join(args.graph_dir, f'{hap_prefix}.sampled.real.gfa'))
+    pos_depths = read_pos_depths(f'{aln_prefix}.sampled.real.giraffe.pos.depth')
+    hap1_bins = bin_walk_depths(pos_depths, walk_nodes[1][0])
+    hap2_bins = bin_walk_depths(pos_depths, walk_nodes[2][0])
+    hap3_bins = bin_walk_depths(pos_depths, walk_nodes[3][0])
+    hap4_bins = bin_walk_depths(pos_depths, walk_nodes[4][0])
+
     # Make panels
     fig = plt.figure(figsize=figure_size, dpi=figure_dpi)
 
@@ -231,6 +304,11 @@ if __name__ == '__main__':
     self_id_panel = set_up_panel(figure_size, self_id_loc)
     self_depth_panel = set_up_panel(figure_size, self_depth_loc)
 
+    hap1_depth_panel = set_up_panel(figure_size, hap1_depth_loc)
+    hap2_depth_panel = set_up_panel(figure_size, hap2_depth_loc)
+    hap3_depth_panel = set_up_panel(figure_size, hap3_depth_loc)
+    hap4_depth_panel = set_up_panel(figure_size, hap4_depth_loc)
+
     # Do plotting
     plot_identity_barchart(chm13_id_panel, chm13_id, truth_pos, self_len)
     plot_identity_barchart(neighbor_id_panel, neighbor_id, truth_pos, self_len)
@@ -240,6 +318,11 @@ if __name__ == '__main__':
     plot_depth_barchart(chm13_depth_panel, chm13_depth, chm13_len)
     plot_depth_barchart(neighbor_depth_panel, neighbor_depth, neighbor_len)
     plot_depth_barchart(self_depth_panel, self_depth, self_len)
+
+    plot_depth_barchart(hap1_depth_panel, hap1_bins, walk_nodes[1][1])
+    plot_depth_barchart(hap2_depth_panel, hap2_bins, walk_nodes[2][1])
+    plot_depth_barchart(hap3_depth_panel, hap3_bins, walk_nodes[3][1])
+    plot_depth_barchart(hap4_depth_panel, hap4_bins, walk_nodes[4][1])
 
     row_label(chm13_id_panel, 'CHM13')
     row_label(neighbor_id_panel, args.neighbor_name)
@@ -252,6 +335,7 @@ if __name__ == '__main__':
 
     self_id_panel.set_xlabel('Truth position of read')
     self_depth_panel.set_xlabel('Alignment position along linear ref')
+    hap4_depth_panel.set_xlabel('Alignment position along sampled hap')
 
     fig.savefig(f'{args.output_prefix}.png')
     fig.savefig(f'{args.output_prefix}.svg')
