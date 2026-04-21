@@ -138,12 +138,15 @@ def read_identities(aln_tsv: str) -> Dict[str, float]:
     return read_id_vals
 
 def read_walk_nodes(gfa_file: str) -> Dict[int, Tuple[List[int], int]]:
-    """Read nodes along walks into an ordered list.
+    """Read new nodes along walks into an ordered list.
 
     Keys are the haplotype number from column 3.
     Values are nodes in order along that walk.
     
-    Assumes only '>' characters separate nodes, i.e. nothing backwards
+    Assumes only '>' characters separate nodes, i.e. nothing backwards.
+
+    Goes through the nodes and adds a negative if it's been seen
+    in an earlier-numbered haplotype.
 
     Returns {hap num : ([nodes], path len)}
     """
@@ -157,6 +160,16 @@ def read_walk_nodes(gfa_file: str) -> Dict[int, Tuple[List[int], int]]:
                 # Extract node IDs from >1>3>274408>etc.
                 nodes = [int(node_id) for node_id in parts[6].split('>')[1:]]
                 walk_nodes[hap_num] = (nodes, hap_len)
+    
+    # Negate previously-seen nodes
+    seen_nodes = set()
+    for hap_num in sorted(walk_nodes.keys()):
+        for i, node in enumerate(walk_nodes[hap_num][0]):
+            if node in seen_nodes:
+                walk_nodes[hap_num][0][i] = -node
+            else:
+                seen_nodes.add(node)
+    
     return walk_nodes  
 
 def read_pos_depths(depth_tsv: str) -> Dict[int, List[int]]:
@@ -177,13 +190,15 @@ def read_pos_depths(depth_tsv: str) -> Dict[int, List[int]]:
 
 def bin_walk_depths(pos_depths: Dict[int, List[int]], 
                     hap_nodes: List[int]) -> Dict[int, int]:
-    """Get average depths within bins along a walk."""
+    """Get average novel depths within bins along a walk."""
     bin_cov = dict()
     cur_total_cov = 0
     cur_pos = 1
     for node in hap_nodes:
-        for depth in pos_depths[node]:
-            cur_total_cov += depth
+        abs_node = node if node > 0 else -node
+        for depth in pos_depths[abs_node]:
+            if node > 0:
+                cur_total_cov += depth
             if cur_pos % BIN_SIZE == 0:
                 # We've reached the end of a bin; save average
                 bin_cov[cur_pos] = cur_total_cov / BIN_SIZE
@@ -332,6 +347,7 @@ if __name__ == '__main__':
     # Column labels
     chm13_id_panel.set_title('Alignment identity')
     chm13_depth_panel.set_title('Read depth')
+    chm13_depth_panel.set_title('Read depth on novel sequence')
 
     self_id_panel.set_xlabel('Truth position of read')
     self_depth_panel.set_xlabel('Alignment position along linear ref')
