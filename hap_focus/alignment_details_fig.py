@@ -137,6 +137,23 @@ def read_identities(aln_tsv: str) -> Dict[str, float]:
             read_id_vals[parts[0]] = float(parts[1])
     return read_id_vals
 
+def read_sampled_haps(log_file: str) -> List[str]:
+    """Read sampled haplotype names in order.
+    
+    Pulls specific sampled haplotypes via
+        Selected haplotype <name> with score <score>
+    """
+    sampled_haps = []
+    with open(log_file) as file:
+        for line in file:
+            parts = line.strip().split()
+            if line.startswith('Selected haplotype'):
+                hap_name = parts[2]
+                sampled_haps.append(hap_name)
+            elif line.startswith('Best guess'):
+                n_haps = int(parts[3])
+                return sampled_haps[:n_haps]
+
 def read_walk_nodes(gfa_file: str) -> Dict[int, Tuple[List[int], int]]:
     """Read new nodes along walks into an ordered list.
 
@@ -220,9 +237,10 @@ def set_up_panel(figsize: Tuple[float, float],
     panel.set_yticks([])
     return panel
 
-def row_label(panel: plt.Axes, label: str) -> None:
-    """Add a row label to the left of the left column."""
-    panel.text(-0.5, 0.5, label, transform=panel.transAxes,
+def row_label(panel: plt.Axes, label: str, left: bool) -> None:
+    """Add a row label to the side of a column."""
+    x = -0.5 if left else 1.1
+    panel.text(x, 0.5, label, transform=panel.transAxes,
                horizontalalignment='left', verticalalignment='center')
 
 def plot_identity_barchart(panel: plt.Axes, read_id_vals: Dict[str, float],
@@ -273,6 +291,7 @@ if __name__ == '__main__':
     args = parse_args()
     hap_prefix = f'{args.chromosome}.{args.haplotype_name}'
     aln_prefix = os.path.join(args.aln_dir, hap_prefix)
+    graph_prefix = os.path.join(args.graph_dir, hap_prefix)
 
     # Get data
     truth_pos = read_truth_pos(args.truth_reads_sam)
@@ -282,7 +301,7 @@ if __name__ == '__main__':
     neighbor_len = get_hap_len(
         os.path.join(args.graph_dir, 
                      f'{args.chromosome}.{args.neighbor_name}.fasta'))
-    self_len = get_hap_len(os.path.join(args.graph_dir, f'{hap_prefix}.fasta'))
+    self_len = get_hap_len(f'{graph_prefix}.fasta')
 
     chm13_depth = read_coverage(f'{aln_prefix}.CHM13.depth.tsv', chm13_len)
     neighbor_depth = read_coverage(f'{aln_prefix}.neighbor.depth.tsv', 
@@ -294,11 +313,9 @@ if __name__ == '__main__':
     sampled_id = read_identities(f'{aln_prefix}.sampled.real.giraffe.tsv')
     self_id = read_identities(f'{aln_prefix}.own_hap.real.minimap2.tsv')
     
-#    -g /private/groups/patenlab/fokamoto/centrolign/graph/haploid/chr10.HG01106.1.sampled.real.gfa \
-#    -d /private/groups/patenlab/fokamoto/centrolign/alignments/haploid/chr10.HG01106.1.sampled.real.giraffe.pos.depth \
+    sampled_hap_names = read_sampled_haps(f'{graph_prefix}.guess.real.log')
 
-    walk_nodes = read_walk_nodes(
-        os.path.join(args.graph_dir, f'{hap_prefix}.sampled.real.gfa'))
+    walk_nodes = read_walk_nodes(f'{graph_prefix}.sampled.real.gfa')
     pos_depths = read_pos_depths(f'{aln_prefix}.sampled.real.giraffe.pos.depth')
     hap1_bins = bin_walk_depths(pos_depths, walk_nodes[1][0])
     hap2_bins = bin_walk_depths(pos_depths, walk_nodes[2][0])
@@ -339,15 +356,22 @@ if __name__ == '__main__':
     plot_depth_barchart(hap3_depth_panel, hap3_bins, walk_nodes[3][1])
     plot_depth_barchart(hap4_depth_panel, hap4_bins, walk_nodes[4][1])
 
-    row_label(chm13_id_panel, 'CHM13')
-    row_label(neighbor_id_panel, args.neighbor_name)
-    row_label(sampled_id_panel, 'Personalized graph')
-    row_label(self_id_panel, args.haplotype_name)
+    # Labels for cols 1-2
+    row_label(chm13_id_panel, 'CHM13', True)
+    row_label(neighbor_id_panel, args.neighbor_name, True)
+    row_label(sampled_id_panel, 'Personalized graph', True)
+    row_label(self_id_panel, args.haplotype_name, True)
+
+    # Labels for col 3
+    row_label(hap1_depth_panel, sampled_hap_names[0], False)
+    row_label(hap2_depth_panel, sampled_hap_names[1], False)
+    row_label(hap3_depth_panel, sampled_hap_names[2], False)
+    row_label(hap4_depth_panel, sampled_hap_names[3], False)
 
     # Column labels
     chm13_id_panel.set_title('Alignment identity')
     chm13_depth_panel.set_title('Read depth')
-    chm13_depth_panel.set_title('Read depth on novel sequence')
+    hap1_depth_panel.set_title('Read depth on novel sequence')
 
     self_id_panel.set_xlabel('Truth position of read')
     self_depth_panel.set_xlabel('Alignment position along linear ref')
