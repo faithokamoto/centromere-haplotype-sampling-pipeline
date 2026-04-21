@@ -149,7 +149,7 @@ def read_distances(distances_file: str) -> Dict[str, Dict[str, float]]:
     return dist_matrix
 
 def get_guesses(log_file: str) -> Tuple[List[str], List[str], int, str]:
-    """Look up the sampled haplotypes & tries to type the cenhap.
+    """Look up the sampled haplotypes & cenhap.
     
     Pulls specific sampled haplotypes via
         Selected haplotype <name> with score <score>
