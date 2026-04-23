@@ -412,8 +412,8 @@ if __name__ == '__main__':
 
     # Column labels
     chm13_id_panel.set_title('Alignment identity')
-    chm13_depth_panel.set_title('Read depth on reference')
-    hap1_depth_panel.set_title('Read depth on novel sequence')
+    chm13_depth_panel.set_title('Depth on reference')
+    hap1_depth_panel.set_title('Depth on novel (black) & shared (gray) seq')
 
     self_id_panel.set_xlabel('Truth position of read')
     self_depth_panel.set_xlabel('Alignment position along linear ref')
