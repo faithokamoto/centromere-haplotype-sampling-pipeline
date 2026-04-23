@@ -221,26 +221,35 @@ def read_pos_depths(depth_tsv: str) -> Dict[int, List[int]]:
         pos_depths[node_id] = dep_list
     return pos_depths
 
-def bin_walk_depths(pos_depths: Dict[int, List[int]], 
-                    hap_nodes: List[int]) -> Dict[int, int]:
+def bin_walk_depths(pos_depths: Dict[int, List[int]], hap_nodes: List[int]
+                    ) -> Tuple[Dict[int, int], Dict[int, int]]:
     """Get average novel depths within bins along a walk."""
-    bin_cov = dict()
-    cur_total_cov = 0
+    # Depth on nodes new to this haplotype (positive node IDs)
+    new_bin_cov = dict()
+    # Depth on nodes shared with previous haplotypes (negative node IDs)
+    old_bin_cov = dict()
+    cur_new_cov = 0
+    cur_old_cov = 0
     cur_pos = 1
     for node in hap_nodes:
         abs_node = node if node > 0 else -node
         for depth in pos_depths[abs_node]:
             if node > 0:
-                cur_total_cov += depth
+                cur_new_cov += depth
+            else:
+                cur_old_cov += depth
             if cur_pos % BIN_SIZE == 0:
                 # We've reached the end of a bin; save average
-                bin_cov[cur_pos] = cur_total_cov / BIN_SIZE
-                cur_total_cov = 0
+                new_bin_cov[cur_pos] = cur_new_cov / BIN_SIZE
+                old_bin_cov[cur_pos] = cur_old_cov / BIN_SIZE
+                cur_new_cov = 0
+                cur_old_cov = 0
             cur_pos += 1
     last_bin = coord_to_bin(cur_pos - 1)
     last_bin_length = cur_pos - last_bin
-    bin_cov[last_bin] = cur_total_cov / last_bin_length
-    return bin_cov
+    new_bin_cov[last_bin] = cur_new_cov / last_bin_length
+    old_bin_cov[last_bin] = cur_old_cov / last_bin_length
+    return new_bin_cov, old_bin_cov
 
 # ==== plotting functions ====
 
@@ -286,17 +295,27 @@ def plot_identity_barchart(panel: plt.Axes, read_id_vals: Dict[str, float],
     panel.set_ylim(0.9, 1)
     panel.set_yticks([0.9, 1], ['.9', '1'])
 
-def plot_depth_barchart(panel: plt.Axes, bin_cov: Dict[int, int],
-                        hap_len: int) -> None:
+def plot_depth_barchart(panel: plt.Axes, black_cov: Dict[int, int],
+                        hap_len: int, gray_cov: Dict[int, int] = None) -> None:
     """Plot binned average depth barchart."""
     max_cov = 0
-    for bin_start, cur_cov in bin_cov.items():
+    for bin_start, cur_cov in black_cov.items():
         max_cov = max(max_cov, cur_cov)
         if cur_cov:
             panel.add_patch(mplpatches.Rectangle(
                     (bin_start, 0), 
                     BIN_SIZE, cur_cov, 
                     facecolor='black'
+                ))
+    if not gray_cov is None:
+        for bin_start, cur_cov in gray_cov.items():
+            bottom_y = black_cov[bin_start] if bin_start in black_cov else 0
+            max_cov = max(max_cov, cur_cov + bottom_y)
+            if cur_cov:
+                panel.add_patch(mplpatches.Rectangle(
+                    (bin_start, bottom_y), 
+                    BIN_SIZE, cur_cov, 
+                    facecolor='gray'
                 ))
 
     panel.set_xlim(1, hap_len)
@@ -336,10 +355,10 @@ if __name__ == '__main__':
 
     walk_nodes = read_walk_nodes(f'{graph_prefix}.sampled.real.gfa')
     pos_depths = read_pos_depths(f'{aln_prefix}.sampled.real.giraffe.pos.depth')
-    hap1_bins = bin_walk_depths(pos_depths, walk_nodes[1][0])
-    hap2_bins = bin_walk_depths(pos_depths, walk_nodes[2][0])
-    hap3_bins = bin_walk_depths(pos_depths, walk_nodes[3][0])
-    hap4_bins = bin_walk_depths(pos_depths, walk_nodes[4][0])
+    hap1_bins, hap1_old = bin_walk_depths(pos_depths, walk_nodes[1][0])
+    hap2_bins, hap2_old = bin_walk_depths(pos_depths, walk_nodes[2][0])
+    hap3_bins, hap3_old = bin_walk_depths(pos_depths, walk_nodes[3][0])
+    hap4_bins, hap4_old = bin_walk_depths(pos_depths, walk_nodes[4][0])
 
     # ---- panels ----
 
@@ -372,10 +391,10 @@ if __name__ == '__main__':
     plot_depth_barchart(neighbor_depth_panel, neighbor_depth, neighbor_len)
     plot_depth_barchart(self_depth_panel, self_depth, self_len)
 
-    plot_depth_barchart(hap1_depth_panel, hap1_bins, walk_nodes[1][1])
-    plot_depth_barchart(hap2_depth_panel, hap2_bins, walk_nodes[2][1])
-    plot_depth_barchart(hap3_depth_panel, hap3_bins, walk_nodes[3][1])
-    plot_depth_barchart(hap4_depth_panel, hap4_bins, walk_nodes[4][1])
+    plot_depth_barchart(hap1_depth_panel, hap1_bins, walk_nodes[1][1], hap1_old)
+    plot_depth_barchart(hap2_depth_panel, hap2_bins, walk_nodes[2][1], hap2_old)
+    plot_depth_barchart(hap3_depth_panel, hap3_bins, walk_nodes[3][1], hap3_old)
+    plot_depth_barchart(hap4_depth_panel, hap4_bins, walk_nodes[4][1], hap4_old)
 
     # ---- labels ----
 
