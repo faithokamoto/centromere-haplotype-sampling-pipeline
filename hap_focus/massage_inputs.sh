@@ -1,5 +1,5 @@
 #!/bin/bash
-# Set up inputs for supplement (in practice, I ran interactively)
+# Set up inputs for alignment_details_fig.py
 # Assumes you've run: retain_files_alignments.sh HG01106.1 chr10
 # Usage: massage_inputs.sh
 

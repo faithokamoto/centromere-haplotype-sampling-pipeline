@@ -59,7 +59,6 @@ for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
 9. Analayze HG01106.1 on chr10 (`hap_focus`)
     - `retain_files_alignments.sh`
     - `massage_inputs.sh`
-    - `annotate_depths.py`
     - `alignment_details_fig.py`
     - Finish up with two outside operations:
         - Take the annotated GFA and visualize with [BandageNG][Bandage].
@@ -96,7 +95,7 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
     - `slurm_get_reads.sh`: run `get_reads.sh` on haplo/chrom pairs
 - **Focused analysis of one haplotype** (`hap_focus`)
-    - `alignment_details_fig.py`: create chr10 HG01106.1 supplementary figure
+    - `alignment_details_fig.py`: create chr10 HG01106.1 figure
     - `annotate_depths.py`: add `DP` tags to a GFA, given `vg pack` output
     - `massage_inputs.sh`: reshape default alignment outputs for easier plotting
     - `retain_files_alignments.sh`: simplified alignments with less cleanup

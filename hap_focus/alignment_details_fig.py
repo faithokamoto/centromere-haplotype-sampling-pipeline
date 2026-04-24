@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make a detailed alignment comparison supplementary figure.
+"""Make a detailed alignment comparison figure.
 
 This figure focuses on the chr10 haplotype for HG01106.1.
 
