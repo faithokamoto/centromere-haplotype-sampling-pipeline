@@ -38,25 +38,19 @@ hits and thus makes read alignment possible. Selection of *n* is non-trivial.
 ## Workflow
 
 What I did:
-1. Acquire Centrolign GFAs, e.g. 
-    `/private/groups/patenlab/mira/centrolign/batch_submissions/centrolign/release2_QC_v2/MSA/chr4/chr4.centrolign.gfa`
-2. Connect dummy nodes to the source and sink of each haplotype path. This step
-is necessary because all haplotypes must participate in the same top-level chain
-for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
-3. Convert to a GBZ and index for haplotype sampling: `gfa_to_gbz_ref.sh`
-4. Extract CHM13 reference from the larger graph: `create_single_path_ref.sh`
-5. Acquire reads & linear references: `get_reads.sh` (via `slurm_get_reads.sh`)
-6. Refine parameters (`param_test`):
+1. Get graph & CHM13 references: `get_unsampled_gbzs.sh`
+2. Acquire reads & linear references: `get_reads.sh` (via `slurm_get_reads.sh`)
+3. Refine parameters (`param_test`):
     - `default_param_alignments.sh` (via `slurm_alignments.sh`)
     - `testing_absent_score.sh`
     - `absent_score_fig.py`
-7. Perform alignment and typing experiments:
+4. Perform alignment and typing experiments:
     - `haploid_paper_alignments.sh` (via `slurm_haploid.sh`)
     - `diploid_paper_typing.sh` (via `slurm_diploid.sh`)
-8. Collect experiment data (`data_scripts`)
+5. Collect experiment data (`data_scripts`)
     - `haploid_data.py`
     - `diploid_data.py`
-9. Analayze HG01106.1 on chr10 (`hap_focus`)
+6. Analayze HG01106.1 on chr10 (`hap_focus`)
     - `retain_files_alignments.sh`
     - `massage_inputs.sh`
     - `alignment_details_fig.py`
@@ -65,9 +59,6 @@ for the haplotype sampling algorithm. This uses `add_dummy_caps.py`
         - Add a curly brace to the `alignment_details_fig.py` output.
 
 ## Inputs
-
-Note that I use "all chromosomes" here, but that just means the ones I used,
-which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
 
 - **Centrolign GFAs**
 - **Distance matrices** (headerless CSV hap1,hap2,dist)  
@@ -92,6 +83,7 @@ which are chr4, chr6, chr9, chr10, chr11, chr12, and chr17.
     - `create_single_path_ref.sh`: extract & index a linear ref from graph
     - `edit_sam.py`: update a SAM file from genome-wide to graph-space
     - `get_reads.sh`: prepare reads & linear references for a haplotype
+    - `get_unsampled_gbzs.sh`: prepare main references (unsampled graph & CHM13)
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
     - `slurm_get_reads.sh`: run `get_reads.sh` on haplo/chrom pairs
 - **Focused analysis of one haplotype** (`hap_focus`)

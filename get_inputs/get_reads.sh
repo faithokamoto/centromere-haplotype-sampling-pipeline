@@ -18,23 +18,13 @@ echo "Download complete"
 
 for hap_num in 1 2; do
     hap_id="${SAMPLE_ID}.${hap_num}"
-
-    # Subset all-chr centromere coordinate file to have only our chosen ones
-    fgrep -e chr4 -e chr6 -e chr9 -e chr10 -e chr11 -e chr12 -e chr17 \
-        ${BED_DIR}/${hap_id}_asat_arrays.bed > $SAMPLE_TMP/chosen_chroms.bed
-    if [ -s $SAMPLE_TMP/chosen_chroms.bed ]; then
-        echo "BED coordinates found for $hap_id"
-        cat $SAMPLE_TMP/chosen_chroms.bed
-    else
-        echo "No BED coordinates found for $hap_id"
-        continue
-    fi
-
+    hap_bed=${BED_DIR}/${hap_id}_asat_arrays.bed
+    
     # Subset to all chrs first, so we only have to use the giant file once
-    samtools view -@32 -L $SAMPLE_TMP/chosen_chroms.bed -b $SAMPLE_TMP/full.bam > $SAMPLE_TMP/centromeres.bam
+    samtools view -@32 -L "$hap_bed" -b $SAMPLE_TMP/full.bam > $SAMPLE_TMP/centromeres.bam
     samtools index $SAMPLE_TMP/centromeres.bam
 
-    cat $SAMPLE_TMP/chosen_chroms.bed | while read line; do
+    cat "$hap_bed" | while read line; do
         echo "$line"
         old_path_name=`echo $line | cut -f1 -d " "`
         start=`echo $line | cut -f2 -d " "`
