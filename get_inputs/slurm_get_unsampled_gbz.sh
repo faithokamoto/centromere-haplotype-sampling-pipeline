@@ -1,9 +1,9 @@
 #!/bin/bash
 # Job name:
-#SBATCH --job-name=get_reads
+#SBATCH --job-name=get_unsampled_gbz
 #
 # Partition - This is the queue it goes in:
-#SBATCH --partition=medium
+#SBATCH --partition=short
 #
 # Where to send email (optional)
 #SBATCH --mail-user=fokamoto@ucsc.edu
@@ -12,7 +12,7 @@
 #SBATCH --nodes=1
 #
 # Memory needed for the jobs.  Try very hard to make this accurate.  DEFAULT = 4gb
-#SBATCH --mem=60gb
+#SBATCH --mem=10gb
 #
 # Number of tasks (one for each CPU desired for use case) (example):
 #SBATCH --ntasks=1
@@ -21,10 +21,10 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=3:00:00
+#SBATCH --time=30:00
 #
 # Array job specification:
-#SBATCH --array=2-232%50
+#SBATCH --array=1-23
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
@@ -32,9 +32,11 @@ DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 source /private/home/${USER}/.bashrc
 source activate cenhap-sample
 
-READ_LOCS=$DIR/input_data/aws_file_locations.csv
-sample_id=`head -n "$SLURM_ARRAY_TASK_ID" "$READ_LOCS" | tail -n 1 | cut -f1 -d ","`
-echo "Running sample: $sample_id"
+if [ "$SLURM_ARRAY_TASK_ID" == "23" ]; then
+    chrom="chrX"
+else
+    chrom="chr${SLURM_ARRAY_TASK_ID}"
+fi
 
-log=$DIR/log/get_reads/${sample_id}.get_reads.log
-$DIR/get_inputs/get_reads.sh $sample_id &> $log
+log=$DIR/log/get_unsampled_gbz/${chrom}.log
+$DIR/get_inputs/get_unsampled_gbz.sh $chrom &> $log
