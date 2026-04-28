@@ -15,7 +15,7 @@ CHM13_DIR=/private/groups/patenlab/fokamoto/centrolign/graph/haploid
 if [ -f $GFA_DIR/$CHROM/${CHROM}.centrolign.gfa ]; then
     ./get_inputs/add_dummy_caps.py -o $GBZ_DIR/${CHROM}.gfa $GFA_DIR/$CHROM/${CHROM}.centrolign.gfa
 else
-    ./get_inputs/add_dummy_caps.py -o $GBZ_DIR/${CHROM}.gfa $GFA_DIR/$CHROM/*/*.gfa
+    ./get_inputs/add_dummy_caps.py -o $GBZ_DIR/${CHROM}.gfa $GFA_DIR/$CHROM/*/${CHROM}*.gfa
 fi
 
 # Convert to GBZ
