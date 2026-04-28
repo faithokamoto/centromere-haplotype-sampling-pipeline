@@ -38,8 +38,8 @@ hits and thus makes read alignment possible. Selection of *n* is non-trivial.
 ## Workflow
 
 What I did:
-1. Get graph & CHM13 references: `get_unsampled_gbzs.sh`
-2. Acquire reads & linear references: `get_reads.sh` (via `slurm_get_reads.sh`)
+1. Get main refs: `get_unsampled_gbzs.sh` (via `slurm_get_unsampled_gbzs.sh`)
+2. Acquire reads & haplotype refs: `get_reads.sh` (via `slurm_get_reads.sh`)
 3. Refine parameters (`param_test`):
     - `default_param_alignments.sh` (via `slurm_alignments.sh`)
     - `testing_absent_score.sh`
@@ -86,6 +86,7 @@ What I did:
     - `get_unsampled_gbzs.sh`: prepare main references (unsampled graph & CHM13)
     - `gfa_to_gbz_ref.sh`: prepare Centrolign GFA as a GBZ reference graph
     - `slurm_get_reads.sh`: run `get_reads.sh` on haplo/chrom pairs
+    - `slurm_get_unsampled_gbzs.sh`: run `get_unsampled_gbzs.sh` on all chroms
 - **Focused analysis of one haplotype** (`hap_focus`)
     - `alignment_details_fig.py`: create chr10 HG01106.1 figure
     - `annotate_depths.py`: add `DP` tags to a GFA, given `vg pack` output
