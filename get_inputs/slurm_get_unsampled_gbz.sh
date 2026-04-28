@@ -12,7 +12,7 @@
 #SBATCH --nodes=1
 #
 # Memory needed for the jobs.  Try very hard to make this accurate.  DEFAULT = 4gb
-#SBATCH --mem=10gb
+#SBATCH --mem=25gb
 #
 # Number of tasks (one for each CPU desired for use case) (example):
 #SBATCH --ntasks=1
