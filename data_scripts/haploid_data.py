@@ -59,6 +59,11 @@ import os # File system interaction
 import sys # stderr
 from typing import Dict, List, Tuple # Type hints
 
+CenhapTable = Dict[str, str]
+"""A {hap : cenhap} truth table."""
+DistMatrix = Dict[str, Dict[str, float]]
+"""A symmetric {hap1 : {hap2 : dist}} matrix."""
+
 # Parts of file names (see file docstring)
 CENHAP_SUFFIX = 'cenhap_predictions.tsv'
 DIST_SUFFIX = 'r2_QC_v2_centrolign_pairwise_distance.csv'
@@ -95,7 +100,7 @@ def parse_args() -> argparse.Namespace:
                         help='Directory with read alignment stat files')
     return parser.parse_args()
 
-def read_chrom_cenhap_table(cenhap_file: str) -> Dict[str, str]:
+def read_chrom_cenhap_table(cenhap_file: str) -> CenhapTable:
     """Read a cenhap assignment table.
     
     Assuming the first line is a header,
@@ -110,7 +115,7 @@ def read_chrom_cenhap_table(cenhap_file: str) -> Dict[str, str]:
             cenhap_table[parts[0]] = parts[1]
     return cenhap_table
 
-def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
+def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, CenhapTable]:
     """Reads all cenhap tables in a directory.
     
     Finds all files matching
@@ -125,8 +130,8 @@ def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
                 os.path.join(cenhap_dir, item))
     return cenhap_tables
 
-def read_distances(distances_file: str) -> Dict[str, Dict[str, float]]:
-    """Read the pairwise distance file.
+def read_chrom_distances(distances_file: str) -> DistMatrix:
+    """Read a pairwise distance file.
 
     Three-column CSV with hap1,hap2,dist
     into symmetrical dictionary of
@@ -147,6 +152,21 @@ def read_distances(distances_file: str) -> Dict[str, Dict[str, float]]:
             dist_matrix[hap1][hap2] = dist
             dist_matrix[hap2][hap1] = dist
     return dist_matrix
+
+def read_all_distances(dist_dir: str) -> Dict[str, DistMatrix]:
+    """Reads all distance matrices in a directory.
+    
+    Finds all files matching
+        <--dist-dir>/<chrom>_r2_QC_v2_centrolign_pairwise_distance.csv
+    and reads them into a {chrom : matrix} dictionary
+    """
+    dist_matrices = dict()
+    for item in os.listdir(dist_dir):
+        if DIST_SUFFIX in item:
+            chrom = item.split('_')[0]
+            dist_matrices[chrom] = read_chrom_distances(
+                os.path.join(dist_dir, item))
+    return dist_matrices
 
 def get_guesses(log_file: str) -> Tuple[List[str], List[str], int, str]:
     """Look up the sampled haplotypes & cenhap.
@@ -210,8 +230,8 @@ def get_aln_stats(log_file: str) -> Dict[str, List[float]]:
 
     return aln_stats
 
-def write_data(cenhap_tables: Dict[str, Dict[str, str]],
-               distance_matrices: Dict[str, Dict[str, Dict[str, float]]],
+def write_data(cenhap_tables: Dict[str, CenhapTable],
+               distance_matrices: Dict[str, DistMatrix],
                log_dir: str, aln_dir: str) -> None:
     """Write the output TSV (see file docstring)."""
     # Write header
@@ -225,10 +245,14 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                           f'{aln_group} runtime', f'{aln_group} memory']
     print('\t'.join(column_titles))
 
-    for chrom in cenhap_tables.keys():
+    for chrom in dist_matrices.keys():
         correct = 0
         total = 0
-        for hap_name, truth_cenhap in cenhap_tables[chrom].items():
+        for hap_name in dist_matrices[chrom].keys():
+            if chrom in cenhap_tables and hap_name in cenhap_tables[chrom]:
+                truth_cenhap = cenhap_tables[chrom][hap_name]
+            else:
+                truth_cenhap = None
             items_to_write = [chrom, hap_name, truth_cenhap]
             
             guess_file = os.path.join(
@@ -260,7 +284,7 @@ def write_data(cenhap_tables: Dict[str, Dict[str, str]],
                 prefix = f'{chrom}.{hap_name}.{REFS[ref]}.{realness}.{tool}'
                 items_to_write += aln_stats[prefix]
 
-            if truth_cenhap == guess_cenhap:
+            if truth_cenhap == guess_cenhap and not truth_cenhap is None:
                 correct += 1
             total += 1
 
@@ -272,10 +296,6 @@ if __name__ == '__main__':
     args = parse_args()
     # Load cross-sample files first
     cenhap_tables = read_all_cenhap_tables(args.cenhap_dir)
-    dist_matrices = dict()
-    # Only bother to read distance matrices for chroms with cenhap tables
-    for chrom in cenhap_tables.keys():
-        dist_matrices[chrom] = read_distances(
-            os.path.join(args.dist_dir, f'{chrom}_{DIST_SUFFIX}'))
+    dist_matrices = read_all_distances(args.dist_dir)
     # Write by-sample data
     write_data(cenhap_tables, dist_matrices, args.log_dir, args.aln_dir)
