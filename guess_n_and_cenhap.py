@@ -55,12 +55,15 @@ def read_cenhap_table(cenhap_file: str) -> Dict[str, str]:
     {haplotype : cenhap} dictionary.
     """
     cenhap_table = {}
-    with open(cenhap_file, 'r') as file:
-        file.readline()  # Skip header
-        for line in file:
-            parts = line.strip().split('\t')
-            cenhap_table[parts[0]] = parts[1]
-    return cenhap_table
+    try:
+        with open(cenhap_file, 'r') as file:
+            file.readline()  # Skip header
+            for line in file:
+                parts = line.strip().split('\t')
+                cenhap_table[parts[0]] = parts[1]
+        return cenhap_table
+    except FileNotFoundError:
+        return None
 
 def read_dist_matrix(matrix_file: str) -> Dict[str, Dict[str, float]]:
     """Read the distance matrix file.
@@ -171,6 +174,10 @@ if __name__ == '__main__':
     optimal_n = guess_optimal_n(scores, args.fall_threshold)
     
     cenhap_table = read_cenhap_table(args.cenhap_table)
-    cenhap = guess_cenhap(scores, cenhap_table, optimal_n, args.ploidy)
+    if cenhap_table is None:
+        # No cenhap table found
+        cenhap = None
+    else:
+        cenhap = guess_cenhap(scores, cenhap_table, optimal_n, args.ploidy)
     
     print(f'Best guess: use {optimal_n} haplotypes & sample cenhap = {cenhap}')
