@@ -21,7 +21,7 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=3:00:00
+#SBATCH --time=8:00:00
 #
 # Array job specification:
 #SBATCH --array=2-232%50
