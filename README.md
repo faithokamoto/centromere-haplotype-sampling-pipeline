@@ -115,7 +115,7 @@ What I did:
     - `README.md`: this file, which explains the repository
 
 Various scripts assume that certain files exist in `input_data`, and that
-certain directories exist in `log` (`chrX` for each chromosome, `default`,
+certain directories exist in `log` (`chr#` for each chromosome, `default`,
 `diploid_typing`, `get_reads`, `slurm`, and `typing_tests` for me).
 
 [Bandage]: https://github.com/asl/BandageNG
