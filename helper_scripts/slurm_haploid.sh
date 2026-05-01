@@ -24,7 +24,7 @@
 #SBATCH --time=8:00:00
 #
 # Array job specification:
-#SBATCH --array=1-1970
+#SBATCH --array=1-6833
 
 # Activate Conda environment
 source /private/home/${USER}/.bashrc
@@ -38,4 +38,9 @@ echo "Running $hap_name on $chrom"
 
 LOCAL_DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 log=$LOCAL_DIR/log/${chrom}/${chrom}.${hap_name}.log
-$LOCAL_DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"
+
+if [ -f $log ]; then
+    echo "Already done"
+else
+    $LOCAL_DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"
+fi
