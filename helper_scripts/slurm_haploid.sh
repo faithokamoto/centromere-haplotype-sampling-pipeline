@@ -39,8 +39,4 @@ echo "Running $hap_name on $chrom"
 LOCAL_DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 log=$LOCAL_DIR/log/${chrom}/${chrom}.${hap_name}.log
 
-if [ -f $log ]; then
-    echo "Already done"
-else
-    $LOCAL_DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"
-fi
+$LOCAL_DIR/haploid_paper_alignments.sh "$hap_name" "$chrom" &> "$log"
