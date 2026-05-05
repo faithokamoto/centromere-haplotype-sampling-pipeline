@@ -284,13 +284,15 @@ def write_data(cenhap_tables: Dict[str, CenhapTable],
                 prefix = f'{chrom}.{hap_name}.{REFS[ref]}.{realness}.{tool}'
                 items_to_write += aln_stats[prefix]
 
-            if truth_cenhap == guess_cenhap and not truth_cenhap is None:
-                correct += 1
-            total += 1
+            if not truth_cenhap is None:
+                total += 1
+                if truth_cenhap == guess_cenhap:
+                    correct += 1
 
             print('\t'.join(str(item) for item in items_to_write))
-        print(f'{chrom} accuracy: {(100 * correct / total):.2f}%', 
-              file=sys.stderr)
+        if total > 0:
+            print(f'{chrom} accuracy: {(100 * correct / total):.2f}%', 
+                file=sys.stderr)
 
 if __name__ == '__main__':
     args = parse_args()
