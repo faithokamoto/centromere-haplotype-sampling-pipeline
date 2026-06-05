@@ -3,7 +3,7 @@
 #SBATCH --job-name=diploid_alignment
 #
 # Partition - This is the queue it goes in:
-#SBATCH --partition=short
+#SBATCH --partition=medium
 #
 # Where to send email (optional)
 #SBATCH --mail-user=fokamoto@ucsc.edu
@@ -24,7 +24,7 @@
 #SBATCH --time=8:00:00
 #
 # Array job specification:
-#SBATCH --array=1-2686
+#SBATCH --array=1-2686%50
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
