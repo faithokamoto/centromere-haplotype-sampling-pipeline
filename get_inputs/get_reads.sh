@@ -46,7 +46,7 @@ for hap_num in 1 2; do
         
         # Single-hap graph is convenient for injection & simulation
         single_hap_graph=$PROJ_DIR/graph/haploid/${chrom}.${hap_id}
-        ./get_inputs/create_single_path_ref.sh $PROJ_DIR/graph/unsampled/${chrom}.pg \
+        ./get_inputs/subset_ref_by_path_name.sh $PROJ_DIR/graph/unsampled/${chrom}.pg \
             "${new_path_name}#0" "$single_hap_graph"
         read_prefix=$PROJ_DIR/to_align/${chrom}.${hap_id}
         # Get truth positions

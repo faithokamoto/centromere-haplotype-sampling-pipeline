@@ -80,7 +80,7 @@ What I did:
     - `diploid_data.py`: get diploid typing stats
 - **Preprocessing scripts** (`get_inputs`)
     - `add_dummy_caps.py`: modify Centrolign GFAs to input to haplotype sampling
-    - `create_single_path_ref.sh`: extract & index a linear ref from graph
+    - `subset_ref_by_path_name.sh`: extract & index a subset ref from graph
     - `edit_sam.py`: update a SAM file from genome-wide to graph-space
     - `get_reads.sh`: prepare reads & linear references for a haplotype
     - `get_unsampled_gbzs.sh`: prepare main references (unsampled graph & CHM13)
@@ -106,7 +106,7 @@ What I did:
     - `slurm_alignments.sh`: run `default_param_alignments.sh` on chr4 haplos
     - `testing_absent_score.sh`: run chr4 typing with varying `--absent-score`
 - **Main pipeline/methods**:
-    - `diploid_paper_typing.sh`: run typing experiment for one sample/chrom pair
+    - `diploid_paper_alignments.sh`: run alignments for one sample/chrom pair
     - `guess_n_and_cenhap.py`: guess optimal *n* value and cenhap of input
     - `haploid_paper_alignments.sh`: run alignments for one haplo/chrom pair
 - **Metadata**

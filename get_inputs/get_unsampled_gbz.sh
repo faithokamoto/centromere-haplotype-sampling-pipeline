@@ -21,4 +21,4 @@ fi
 # Convert to GBZ
 ./get_inputs/gfa_to_gbz_ref.sh $GBZ_DIR/$CHROM
 # Extract CHM13 ref
-./get_inputs/create_single_path_ref.sh $GBZ_DIR/${CHROM}.pg "$CHM13_NAME" $CHM13_DIR/${CHROM}.CHM13
+./get_inputs/subset_ref_by_path_name.sh $GBZ_DIR/${CHROM}.pg "$CHM13_NAME" $CHM13_DIR/${CHROM}.CHM13

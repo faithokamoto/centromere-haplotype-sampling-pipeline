@@ -1,6 +1,6 @@
 #!/bin/bash
 # Job name:
-#SBATCH --job-name=diploid_type
+#SBATCH --job-name=diploid_alignment
 #
 # Partition - This is the queue it goes in:
 #SBATCH --partition=short
@@ -12,7 +12,7 @@
 #SBATCH --nodes=1
 #
 # Memory needed for the jobs.  Try very hard to make this accurate.  DEFAULT = 4gb
-#SBATCH --mem=10gb
+#SBATCH --mem=100gb
 #
 # Number of tasks (one for each CPU desired for use case) (example):
 #SBATCH --ntasks=1
@@ -21,10 +21,10 @@
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm/slurm%j.log
 #
 # Wall clock limit in hrs:min:sec:
-#SBATCH --time=10:00
+#SBATCH --time=8:00:00
 #
 # Array job specification:
-#SBATCH --array=1-784
+#SBATCH --array=1-2686
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
@@ -34,11 +34,10 @@ source activate cenhap-sample
 
 READS_DIR=/private/groups/patenlab/fokamoto/centrolign/to_align
 combo=`ls $READS_DIR/*.real.fastq.gz | cut -f8 -d "/" | cut -f1-2 -d "." | uniq -c | fgrep -v "1 chr" \
-    | fgrep -e "chr4." -e "chr6." -e "chr9." -e "chr10." -e "chr11." -e "chr12." -e "chr17." \
     | head -n "$SLURM_ARRAY_TASK_ID" | tail -1 | sed "s/      2 //g"`
 chrom=`echo "$combo" | cut -f1 -d "."`
 sample_id=`echo "$combo" | cut -f2 -d "."`
 echo "Running $sample_id on $chrom"
 
-log=$DIR/log/diploid_typing/${chrom}.${sample_id}.typing.log
-$DIR/diploid_paper_typing.sh "$sample_id" "$chrom" &> "$log"
+log=$DIR/log/diploid_${chrom}/${chrom}.${sample_id}.log
+$DIR/diploid_paper_alignments.sh "$sample_id" "$chrom" &> "$log"
