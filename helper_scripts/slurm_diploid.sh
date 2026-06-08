@@ -15,7 +15,7 @@
 #SBATCH --mem=100gb
 #
 # Number of tasks (one for each CPU desired for use case) (example):
-#SBATCH --ntasks=1
+#SBATCH --ntasks=20
 #
 # Standard output and error log
 #SBATCH --output=/private/home/fokamoto/centromere-haplotype-sampling-pipeline/log/slurm/slurm%j.log
