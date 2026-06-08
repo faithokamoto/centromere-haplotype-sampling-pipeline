@@ -95,22 +95,14 @@ def read_nodes(gfa_file: str) -> Dict[str, Set[int]]:
 
     return hap_nodes
 
-def find_private_nodes(all_nodes: Dict[str, Set[int]], hap_name: str,
-                       haps_to_consider: Set[str] = None) -> Set[int]:
-    """Find which nodes are private to a particular haplotype.
-    
-    If haps_to_consider is provided, only consider those haplotypes.
-    """
+def find_private_nodes(all_nodes: Dict[str, Set[int]], 
+                       hap_name: str) -> Set[int]:
+    """Find which nodes are private to a particular haplotype."""
     seen_elsewhere = set()
-    if not haps_to_consider:
-        # Default to all other haplotypes
-        haps_to_consider = set(all_nodes.keys())
-    
-    haps_to_consider.remove(hap_name)
+    other_haps = set(all_nodes.keys()) - {hap_name}
 
-    for other in all_nodes.keys():
-        if other in haps_to_consider:
-            seen_elsewhere |= all_nodes[other]
+    for other in other_haps:
+        seen_elsewhere |= all_nodes[other]
     
     return (all_nodes[hap_name] - seen_elsewhere)
 
@@ -158,7 +150,7 @@ def get_guesses(log_file: str) -> List[str]:
 def calc_identity_correctness(truth_nodes: Dict[str, Set[int]], 
                               private_nodes: Set[int],
                               aln_tsv_file: str, 
-                              req_private: bool) -> Tuple[float, float]:
+                              req_private: bool) -> Tuple[float, float | None]:
     """Calculate mean identity & correctness for an alignment set.
     
     Takes in an alignment TSV from vg filter --tsv-out "name;identity;nodes"
@@ -168,6 +160,9 @@ def calc_identity_correctness(truth_nodes: Dict[str, Set[int]],
     req_private indicates whether these alignments should have used the
     native haplotype; if not, then no penalty is applied when nodes
     private to the haplotype path are missed. See "Correctness calculations".
+
+    If correctness is impossible to calculate (due to no reads having any
+    non-private truth positions) then correctness will be None.
     """
 
     identity = []
