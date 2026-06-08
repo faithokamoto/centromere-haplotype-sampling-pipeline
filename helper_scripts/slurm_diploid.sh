@@ -12,7 +12,7 @@
 #SBATCH --nodes=1
 #
 # Memory needed for the jobs.  Try very hard to make this accurate.  DEFAULT = 4gb
-#SBATCH --mem=100gb
+#SBATCH --mem=50gb
 #
 # Number of tasks (one for each CPU desired for use case) (example):
 #SBATCH --ntasks=20
@@ -24,7 +24,7 @@
 #SBATCH --time=8:00:00
 #
 # Array job specification:
-#SBATCH --array=1-2686%50
+#SBATCH --array=1-2686%100
 
 DIR=/private/home/fokamoto/centromere-haplotype-sampling-pipeline
 
