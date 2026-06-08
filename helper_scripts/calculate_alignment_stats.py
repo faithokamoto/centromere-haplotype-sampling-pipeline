@@ -58,8 +58,8 @@ def parse_args() -> argparse.Namespace:
                         help='Chromosome (in filenames)')
     parser.add_argument('-g', '--gfa', required=True,
                         help='GFA file with path nodes')
-    parser.add_argument('-n', '--hap-name', required=True,
-                        help='Haplotype reads are from')
+    parser.add_argument('-n', '--name', required=True,
+                        help='Haplotype or sample reads are from')
     parser.add_argument('-r', '--reads-dir', required=True,
                         help='Directory with truth TSVs')
     parser.add_argument('-a', '--aln-dir', required=True,
@@ -96,15 +96,17 @@ def read_nodes(gfa_file: str) -> Dict[str, Set[int]]:
     return hap_nodes
 
 def find_private_nodes(all_nodes: Dict[str, Set[int]], 
-                       hap_name: str) -> Set[int]:
-    """Find which nodes are private to a particular haplotype."""
+                       haps: Set[str]) -> Set[int]:
+    """Find which nodes are private to given haplotypes."""
     seen_elsewhere = set()
-    other_haps = set(all_nodes.keys()) - {hap_name}
-
-    for other in other_haps:
+    for other in (set(all_nodes.keys()) - haps):
         seen_elsewhere |= all_nodes[other]
+
+    seen_here = set()
+    for here in haps:
+        seen_here |= all_nodes[here]
     
-    return (all_nodes[hap_name] - seen_elsewhere)
+    return (seen_here - seen_elsewhere)
 
 def load_truth_nodes(read_tsv: str) -> Dict[str, Set[int]]:
     """Load the truth node positions for read set.
@@ -229,7 +231,6 @@ def get_runtime_memory(aln_log_file: str) -> Tuple[float, float]:
 
     return runtime, memory
 
-
 def print_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
                     aln_prefix: str, req_private: bool) -> None:
     """Print statistics for each alignment run.
@@ -248,23 +249,44 @@ def print_aln_stats(truth_nodes: Dict[str, Set[int]], private_nodes: Set[int],
 
 if __name__ == '__main__':
     args = parse_args()
+    # Diploid will be just sample ID, haploid is <sample ID>.<hap num>
+    is_haploid = "." in args.name
+
     # Needed across alignment files
     all_nodes = read_nodes(args.gfa)
-    priv_nodes = find_private_nodes(all_nodes, args.hap_name)
+    included_haps = {args.name} if is_haploid \
+                                else {f'{args.name}.1', f'{args.name}.2'}
+    priv_nodes = find_private_nodes(all_nodes, included_haps)
     
-    for realness in ['real', 'sim']:
+    # Diploid alignments only use real reads
+    included_realness = ['real', 'sim'] if is_haploid else ['real']
+    for realness in included_realness:
         # Needed across alignment files of a realness
-        truth_nodes = load_truth_nodes(os.path.join(args.reads_dir, 
-                                f'{args.chrom}.{args.hap_name}.{realness}.tsv'))
+        truth_prefix = os.path.join(args.reads_dir, f'{args.chrom}.{args.name}')
+        if is_haploid:
+            truth_nodes = load_truth_nodes(f'{truth_prefix}.{realness}.tsv')
+        else:
+            truth_nodes = load_truth_nodes(f'{truth_prefix}.1.{realness}.tsv')
+            truth_nodes |= load_truth_nodes(f'{truth_prefix}.2.{realness}.tsv')
         
         for tool in ['minimap2', 'giraffe']:
             for ref in ['CHM13', 'neighbor', 'sampled', 'own_hap']:
-                if tool == 'minimap2' and ref == 'sampled':
-                    # Minimap2 can't do graph alignments
-                    continue
+                if is_haploid:
+                    # Only one alignment set not done for haploid samples
+                    if tool == 'minimap2' and ref == 'sampled':
+                        # Minimap2 can't do graph alignments
+                        continue
+                else:
+                    # A bunch of sub-runs aren't done for diploid samples
+                    if tool == 'minimap2' and ref != 'CHM13':
+                        # Minimap2 needs a linear ref and so only does CHM13
+                        continue
+                    elif tool == 'giraffe' and ref == 'CHM13':
+                        # Since Minimap2 handles CHM13, giraffe doesn't
+                        continue
 
                 # Only alignments to a matched assembly must use private nodes
                 req_priv = (ref == 'own_hap')
                 aln_prefix = os.path.join(args.aln_dir,
-                        f'{args.chrom}.{args.hap_name}.{ref}.{realness}.{tool}')
+                        f'{args.chrom}.{args.name}.{ref}.{realness}.{tool}')
                 print_aln_stats(truth_nodes, priv_nodes, aln_prefix, req_priv)

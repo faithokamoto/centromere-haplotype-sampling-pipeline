@@ -108,3 +108,14 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.real.gbz 2> /dev/null
 
 ./helper_scripts/align_reads_giraffe.sh ${SAMPLED_GRAPH}.real.gbz "$DIPLOID_READS" ${SAMPLED_ALN}.real.giraffe
+
+# ---- get stats! ----
+
+./helper_scripts/calculate_alignment_stats.py -c "$CHROM" -n "$SAMPLE_ID" \
+    -g ${BIG_GRAPH}.gbz.gfa -r $PROJ_DIR/to_align -a "$ALN_DIR" > $ALN_DIR/${PREFIX}.stats.log
+
+cat $ALN_DIR/${PREFIX}.stats.log
+
+# Clean up behind for space reasons
+rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam $ALN_DIR/${PREFIX}.*.gam
+rm -rf "$KMER_DIR"
