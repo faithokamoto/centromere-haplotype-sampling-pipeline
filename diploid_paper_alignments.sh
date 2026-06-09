@@ -89,11 +89,11 @@ kmc -k29 -m128 -okff -t16 -hp "$DIPLOID_READS" \
 
 # Sample 10 haps without alignment, so we can guess ideal # to sample
 vg haplotypes -k $SAMPLE_TMP/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes 10 --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score "$ABSENT_SCORE" \
+    --num-haplotypes 10 -d ${BIG_GRAPH}.dist --absent-score "$ABSENT_SCORE" \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
 # Use logfile to guess
-./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" --ploidy 2 --fall-threshold 2000 \
+./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" --ploidy 2 --fall-threshold 1000 \
         --dist-matrix "$DISTS" ${GUESS_LOG}.real.log &>> ${GUESS_LOG}.real.log
 cat ${GUESS_LOG}.real.log
 
@@ -102,7 +102,7 @@ cat ${GUESS_LOG}.real.log
 n_to_sample=`fgrep Best ${GUESS_LOG}.real.log | cut -d " " -f4`
 
 vg haplotypes -k $SAMPLE_TMP/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
-    --num-haplotypes "$n_to_sample" --haploid-scoring -d ${BIG_GRAPH}.dist --absent-score "$ABSENT_SCORE" \
+    --num-haplotypes "$n_to_sample" -d ${BIG_GRAPH}.dist --absent-score "$ABSENT_SCORE" \
     -g ${SAMPLED_GRAPH}.real.gbz --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> /dev/null
 vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
     --workflow lr-giraffe --gbz ${SAMPLED_GRAPH}.real.gbz 2> /dev/null
@@ -117,5 +117,5 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
 cat $ALN_DIR/${PREFIX}.stats.log
 
 # Clean up behind for space reasons
-rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam $ALN_DIR/${PREFIX}.*.gam
+rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam $ALN_DIR/${PREFIX}.*.gam $ALN_DIR/${PREFIX}.*.tsv
 rm -rf "$KMER_DIR"
