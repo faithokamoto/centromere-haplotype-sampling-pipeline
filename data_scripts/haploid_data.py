@@ -168,7 +168,7 @@ def read_all_distances(dist_dir: str) -> Dict[str, DistMatrix]:
                 os.path.join(dist_dir, item))
     return dist_matrices
 
-def get_guesses(log_file: str) -> Tuple[List[str], List[str], int, str]:
+def get_guesses(log_file: str) -> Tuple[List[str], List[str], int, str | None]:
     """Look up the sampled haplotypes & cenhap.
     
     Pulls specific sampled haplotypes via
@@ -185,7 +185,7 @@ def get_guesses(log_file: str) -> Tuple[List[str], List[str], int, str]:
 
     sampled_haps = []
     scores = []
-    n_haps = None
+    n_haps = 0
     guess_cenhap = None
     with open(log_file) as file:
         for line in file:
