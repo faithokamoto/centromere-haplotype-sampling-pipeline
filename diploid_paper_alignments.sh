@@ -93,7 +93,7 @@ vg haplotypes -k $SAMPLE_TMP/${PREFIX}.real.kff -i ${BIG_GRAPH}.hapl \
     -g /dev/null --ban-sample "$SAMPLE_ID" ${BIG_GRAPH}.gbz 2> ${GUESS_LOG}.real.log
 
 # Use logfile to guess
-./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" --ploidy 2 --fall-threshold 1000 \
+./guess_n_and_cenhap.py --cenhap-table "$CENHAP_TABLE" --ploidy 2 --fall-threshold 2000 \
         --dist-matrix "$DISTS" ${GUESS_LOG}.real.log &>> ${GUESS_LOG}.real.log
 cat ${GUESS_LOG}.real.log
 
@@ -117,5 +117,6 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
 cat $ALN_DIR/${PREFIX}.stats.log
 
 # Clean up behind for space reasons
-rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam $ALN_DIR/${PREFIX}.*.gam $ALN_DIR/${PREFIX}.*.tsv $GRAPH_DIR/${PREFIX}.*
+rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam $ALN_DIR/${PREFIX}.*.gam $ALN_DIR/${PREFIX}.*.tsv
+rm $GRAPH_DIR/${PREFIX}.own_hap.* $GRAPH_DIR/${PREFIX}.neighbor.* $GRAPH_DIR/${PREFIX}.sampled.*
 rm -rf "$KMER_DIR"
