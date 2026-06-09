@@ -68,7 +68,7 @@ def read_chrom_cenhap_table(cenhap_file: str) -> Dict[str, str]:
             cenhap_table[parts[0]] = parts[1]
     return cenhap_table
 
-def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Diplotype]:
+def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Dict[str, str]]:
     """Reads all cenhap tables in a directory.
     
     Finds all files matching
@@ -83,7 +83,7 @@ def read_all_cenhap_tables(cenhap_dir: str) -> Dict[str, Diplotype]:
                 os.path.join(cenhap_dir, item))
     return cenhap_tables
 
-def extract_guess(log_file: str) -> Tuple[str]:
+def extract_guess(log_file: str) -> Tuple[str, str] | None:
     """Read haplotype pair from file."""
     with open(log_file) as file:
         for line in file:
@@ -91,7 +91,11 @@ def extract_guess(log_file: str) -> Tuple[str]:
             if line.startswith('Best guess'):
                 guess_1 = parts[9]
                 guess_2 = parts[11]
-                return tuple(sorted([guess_1, guess_2]))
+                if guess_1 < guess_2:
+                    return guess_1, guess_2
+                else:
+                    return guess_2, guess_1
+    return None
             
 def find_all_diplotypes(cur_table: Dict[str, str]) -> Dict[str, Diplotype]:
     """Convert a {haplotype : cenhap} table to a {sample : cenhaps} table."""
@@ -126,8 +130,8 @@ if __name__ == '__main__':
         for sample, true_cenhaps in sample_to_true.items():
             guess_log = os.path.join(args.log_dir, 
                                      f'{chrom}.{sample}.{GUESS_SUFFIX}')
-            if os.path.exists(guess_log):
-                guessed_cenhaps = extract_guess(guess_log)
+            guessed_cenhaps = extract_guess(guess_log)
+            if guessed_cenhaps:
                 print('\t'.join([chrom, sample, 
                                 ','.join(true_cenhaps),
                                 ','.join(guessed_cenhaps)]))
