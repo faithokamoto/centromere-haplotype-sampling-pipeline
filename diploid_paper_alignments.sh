@@ -117,5 +117,5 @@ vg autoindex --prefix ${SAMPLED_GRAPH}.real --no-guessing \
 cat $ALN_DIR/${PREFIX}.stats.log
 
 # Clean up behind for space reasons
-rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam $ALN_DIR/${PREFIX}.*.gam $ALN_DIR/${PREFIX}.*.tsv
+rm $ALN_DIR/${PREFIX}.*.bam $ALN_DIR/${PREFIX}.*.sam $ALN_DIR/${PREFIX}.*.gam $ALN_DIR/${PREFIX}.*.tsv $GRAPH_DIR/${PREFIX}.*
 rm -rf "$KMER_DIR"
