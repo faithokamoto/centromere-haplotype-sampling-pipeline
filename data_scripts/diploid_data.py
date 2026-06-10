@@ -179,7 +179,7 @@ def get_aln_stats(log_file: str) -> Dict[str, List[float]]:
 if __name__ == '__main__':
     args = parse_args()
     cenhap_tables = read_all_cenhap_tables(args.cenhap_dir)
-    samples = read_sample_list(args.sample_list)
+    samples = sorted(read_sample_list(args.sample_list))
 
     column_titles = ['Chromosome', 'Sample', 
                      'Truth cenhaps', 'Guessed cenhaps']
