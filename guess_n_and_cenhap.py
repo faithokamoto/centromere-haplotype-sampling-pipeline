@@ -47,7 +47,7 @@ def parse_scores(logfile: str) -> List[SampledHaplotype]:
                 sampled.append(SampledHaplotype(parts[2], float(parts[5])))
     return sampled
 
-def read_cenhap_table(cenhap_file: str) -> Dict[str, str]:
+def read_cenhap_table(cenhap_file: str) -> Dict[str, str] | None:
     """Read the cenhap assignment table.
     
     Assuming the first line is a header,
@@ -129,7 +129,7 @@ def guess_optimal_n(sampled: List[SampledHaplotype], threshold: int) -> int:
     return len(sampled)
 
 def guess_cenhap(sampled: List[SampledHaplotype], cenhap_table: Dict[str, str],
-                 n_to_use: int, ploidy: int) -> str:
+                 n_to_use: int, ploidy: int) -> str | None:
     """Guess a sample's cenhap.
     
     For haploid samples, just use the top sample's cenhap.
