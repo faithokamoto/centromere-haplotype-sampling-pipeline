@@ -46,7 +46,7 @@ What I did:
     - `absent_score_fig.py`
 4. Perform alignment and typing experiments:
     - `haploid_paper_alignments.sh` (via `slurm_haploid.sh`)
-    - `diploid_paper_typing.sh` (via `slurm_diploid.sh`)
+    - `diploid_paper_alignments.sh` (via `slurm_diploid.sh`)
 5. Collect experiment data (`data_scripts`)
     - `haploid_data.py`
     - `diploid_data.py`
@@ -96,8 +96,8 @@ What I did:
     - `align_reads_giraffe.sh`: align reads with Giraffe & get per-read stats
     - `align_reads_minimap2.sh`: align reads with Minimap2 & get per-read stats
     - `calculate_alignment_stats.py`: get stats for one haplo/chrom pair
-    - `slurm_diploid.sh`: run `diploid_paper_typing.sh` on sample/chrom pairs
-    - `slurm_haploid.sh`: run `haploid_paper_alignments.sh` on haplo/chrom pairs
+    - `slurm_diploid.sh`: run `diploid_paper_alignments.sh` on all sample/chrom
+    - `slurm_haploid.sh`: run `haploid_paper_alignments.sh` on all haplo/chrom
 - **`--absent-score` parameter testing** (`param_tests`)
     - `absent_score_fig.py`: create `--absent-score` supplementary figure
     - `arial.ttf`: font to make the figure fit within *Nature* rules
